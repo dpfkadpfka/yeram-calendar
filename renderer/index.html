@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; script-src 'self'">
+<title>예람달력</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <header class="titlebar drag" id="titlebar">
+    <div class="nav">
+      <button class="ib" id="prev" title="이전 달 (←)" aria-label="이전 달"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
+      <h1 id="monthTitle">-</h1><h1 id="miniTitle" class="mini-only">오늘 일정</h1>
+      <button class="ib" id="next" title="다음 달 (→)" aria-label="다음 달"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <button class="tb" id="todayBtn">오늘</button>
+    </div>
+    <label class="opac" title="창 투명도"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg><input type="range" id="tbOpacity" min="30" max="100" step="5" aria-label="창 투명도"></label>
+    <div class="tools">
+      <button class="ib" id="addBtn" title="일정 추가" aria-label="일정 추가"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+      <button class="ib" id="searchBtn" title="검색" aria-label="검색"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg></button>
+      <button class="ib" id="refreshBtn" title="새로고침" aria-label="새로고침"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/></svg></button>
+      <button class="ib" id="panelBtn" title="오른쪽 목록 열기/닫기" aria-label="목록"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M14.5 4.5v15"/></svg></button>
+      <button class="ib" id="lockBtn" title="위치·크기 고정" aria-label="고정"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3.5h6l-1 6 3.5 3.5H6.5L10 9.5z"/><path d="M12 13v7.5"/></svg></button>
+      <button class="ib" id="settingsBtn" title="설정" aria-label="설정"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+      <span class="sep"></span>
+      <button class="ib" id="miniBtn" title="오늘 일정만 작게 보기" aria-label="작게 보기"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3.5" width="14" height="17" rx="2.5"/><path d="M8.5 8h7M8.5 12h7M8.5 16h4"/></svg></button>
+      <button class="ib" id="minBtn" title="최소화" aria-label="최소화"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 12h12"/></svg></button>
+      <button class="ib close" id="closeBtn" title="숨기기 (트레이에서 다시 열기)" aria-label="숨기기"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></button>
+    </div>
+  </header>
+
+  <div class="banner" id="banner" hidden></div>
+
+  <div class="body">
+    <section class="month" id="month">
+      <div class="dow" id="dow"></div>
+      <div class="grid" id="grid"></div>
+      <button class="handle" id="panelHandle" type="button" aria-label="오른쪽 목록 열기/닫기">›</button>
+      <div class="onboard" id="onboard" hidden>
+        <div class="card">
+          <h2>구글 캘린더 연결이 필요해요</h2>
+          <p>설정을 열고 <b>구글 로그인</b>을 누르면 끝이에요. 브라우저에서 "확인되지 않은 앱" 경고가 나오면 <b>고급 → 예람달력(으)로 이동</b>을 눌러 주세요.</p>
+          <button class="primary" id="onboardBtn">설정 열기</button>
+        </div>
+      </div>
+    </section>
+    <aside class="panel" id="panel">
+      <div class="tabs" role="tablist">
+        <button role="tab" data-mode="day" id="tabDay">일</button>
+        <button role="tab" data-mode="week" id="tabWeek">주</button>
+        <button role="tab" data-mode="search" id="tabSearch">검색</button>
+      </div>
+      <div class="searchbox" id="searchbox" hidden>
+        <input id="searchInput" type="search" placeholder="제목·메모·장소 검색 (앞뒤 1년)" autocomplete="off">
+      </div>
+      <div class="plist" id="plist"></div>
+    </aside>
+  </div>
+
+  <footer class="foot">
+    <span id="syncText">불러오는 중</span>
+    <span class="hint">날짜 더블클릭: 추가 · 일정 끌어서 옮기기</span>
+  </footer>
+</div>
+
+<dialog id="editor">
+  <form method="dialog" id="edForm" class="dlg">
+    <div class="dlg-head">
+      <h2 id="edTitle">일정 추가</h2>
+      <button type="button" class="ib" id="edClose" aria-label="닫기">✕</button>
+    </div>
+    <div class="cats" id="edCats"></div>
+    <label class="field"><span>제목</span><input id="edSummary" required autocomplete="off"></label>
+    <div class="row">
+      <label class="check"><input type="checkbox" id="edAllDay"> 종일</label>
+      <label class="field sm"><span>캘린더</span><select id="edCal"></select></label>
+    </div>
+    <div class="row when">
+      <label class="field"><span>시작</span><input type="date" id="edSD"></label>
+      <label class="field t"><span>&nbsp;</span><input type="time" id="edST" step="300"></label>
+      <span class="tilde">~</span>
+      <label class="field"><span>종료</span><input type="date" id="edED"></label>
+      <label class="field t"><span>&nbsp;</span><input type="time" id="edET" step="300"></label>
+    </div>
+    <div class="field"><span>색상</span><div class="swatches" id="edColors"></div></div>
+    <div class="row">
+      <label class="field"><span>알림</span>
+        <select id="edRemind">
+          <option value="none">없음</option>
+          <option value="default">캘린더 기본값</option>
+          <option value="10">10분 전</option>
+          <option value="30">30분 전</option>
+          <option value="60">1시간 전</option>
+          <option value="1440">1일 전</option>
+        </select>
+      </label>
+      <label class="field" id="edRepeatWrap"><span>반복</span>
+        <select id="edRepeat">
+          <option value="">반복 안 함</option>
+          <option value="DAILY">매일</option>
+          <option value="WEEKLY">매주</option>
+          <option value="MONTHLY">매월</option>
+          <option value="YEARLY">매년</option>
+        </select>
+      </label>
+    </div>
+    <p class="note" id="edRecurNote" hidden>반복 일정이에요. 여기서 고치면 이 날짜 하나만 바뀌어요.</p>
+    <label class="field"><span>장소</span><input id="edLoc" autocomplete="off"></label>
+    <label class="field"><span>메모</span><textarea id="edDesc" rows="4"></textarea></label>
+    <p class="err" id="edErr" hidden></p>
+    <div class="dlg-foot">
+      <button type="button" class="danger" id="edDelete">삭제</button>
+      <button type="button" class="link" id="edOpen">구글 캘린더에서 열기</button>
+      <span class="grow"></span>
+      <button type="button" id="edCancel">취소</button>
+      <button type="submit" class="primary" id="edSave">저장</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="settings">
+  <form method="dialog" class="dlg" id="stForm">
+    <div class="dlg-head">
+      <h2>설정</h2>
+      <button type="button" class="ib" id="stClose" aria-label="닫기">✕</button>
+    </div>
+    <h3>구글 계정</h3>
+    <details class="adv" id="stAdv">
+      <summary>고급: 내 구글 키 직접 쓰기</summary>
+      <p class="note">비워 두면 앱에 들어 있는 기본 키를 써요. 직접 발급한 키를 쓰고 싶을 때만 넣으세요. 키를 바꾸면 다시 로그인해야 해요.</p>
+      <label class="field"><span>클라이언트 ID</span><input id="stClientId" autocomplete="off" spellcheck="false" placeholder="....apps.googleusercontent.com"></label>
+      <label class="field"><span>클라이언트 보안 비밀번호</span><input id="stSecret" type="password" autocomplete="off" spellcheck="false" placeholder="GOCSPX-..."></label>
+    </details>
+    <div class="row">
+      <span id="stStatus" class="status-text">로그인 안 됨</span>
+      <span class="grow"></span>
+      <button type="button" id="stLogout">로그아웃</button>
+      <button type="button" class="primary" id="stLogin">구글 로그인</button>
+    </div>
+    <h3>표시할 캘린더</h3>
+    <div class="callist" id="stCals"><span class="muted">로그인하면 목록이 나와요.</span></div>
+    <h3>창</h3>
+    <label class="field"><span>투명도 <b id="stOpVal">100%</b></span><input type="range" id="stOpacity" min="30" max="100" step="5"></label>
+    <div class="row wrap">
+      <label class="field sm"><span>테마</span>
+        <select id="stTheme"><option value="system">윈도우 설정 따름</option><option value="light">밝게</option><option value="dark">어둡게</option></select>
+      </label>
+      <label class="field sm"><span>한 주 시작</span>
+        <select id="stWeek"><option value="0">일요일</option><option value="1">월요일</option></select>
+      </label>
+    </div>
+    <h3>글꼴·색</h3>
+    <div class="row wrap">
+      <label class="field sm"><span>디자인</span><select id="stStyle"><option value="glass">유리 (글래스모피즘)</option><option value="3d">입체 (3D)</option><option value="flat">평면</option></select></label>
+      <label class="field"><span>글꼴</span><select id="stFont"></select></label>
+      <label class="field sm"><span>글자·화면 크기 <b id="stFsVal">13</b></span><input type="range" id="stFontSize" min="11" max="17" step="1"></label>
+    </div>
+    <div class="field"><span>포인트 색 (오늘 표시·버튼)</span><div class="swatches" id="stAccent"></div></div>
+    <div class="field" id="stGlassRow"><span>유리 뒤 배경</span><div class="scenes" id="stScene"></div>
+      <label class="check" id="stSeeWrap"><input type="checkbox" id="stSee"> 바탕화면이 비치게 (끄면 위 배경이 보여요)</label></div>
+    <div class="field"><span>카드 색 (유리 디자인에서는 유리 색)</span><div class="swatches" id="stBg"></div></div>
+    <label class="check"><input type="checkbox" id="stPeek"> 마우스를 올리면 그 칸 크게 보기</label>
+    <label class="check"><input type="checkbox" id="stTop"> 항상 다른 창 위에 표시</label>
+    <label class="check"><input type="checkbox" id="stLock"> 위치·크기 고정</label>
+    <label class="check"><input type="checkbox" id="stAuto"> 윈도우 시작할 때 자동 실행</label>
+    <div class="dlg-foot">
+      <button type="button" class="danger" id="stQuit">앱 종료</button>
+      <span class="muted" id="stVer"></span>
+      <span class="grow"></span>
+      <button type="submit" class="primary">닫기</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="app.js"></script>
+</body>
+</html>

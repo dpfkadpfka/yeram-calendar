@@ -1,0 +1,46 @@
+{
+  "name": "yeram-calendar",
+  "productName": "예람달력",
+  "version": "1.0.0",
+  "description": "구글 캘린더와 연동되는 바탕화면 달력",
+  "main": "main.js",
+  "author": "김예람",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win --x64"
+  },
+  "dependencies": {
+    "electron-updater": "^6.6.2"
+  },
+  "devDependencies": {
+    "electron": "44.6.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "kr.yeram.calendar",
+    "productName": "예람달력",
+    "executableName": "YeramCalendar",
+    "copyright": "© 김예람",
+    "directories": { "output": "dist", "buildResources": "build" },
+    "files": ["main.js", "preload.js", "renderer/**", "assets/**", "creds.json", "package.json"],
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "icon": "build/icon.ico",
+      "artifactName": "YeramCalendar-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "shortcutName": "예람달력",
+      "uninstallDisplayName": "예람달력",
+      "installerLanguages": ["ko_KR"],
+      "language": "1042",
+      "deleteAppDataOnUninstall": false
+    },
+    "publish": [{ "provider": "github", "releaseType": "release" }]
+  }
+}
