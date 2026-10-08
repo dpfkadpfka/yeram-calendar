@@ -15,6 +15,6 @@
 3. Actions가 설치 파일을 만들어 Releases에 올리고, 설치한 사람들 앱이 자동 업데이트돼요.
 
 처음 한 번: 저장소 **Settings → Secrets and variables → Actions**에
-`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`을 등록해요.
+`GOOGLE_CLIENT_SECRET`을 등록해요. (클라이언트 ID는 워크플로에 들어 있어요)
 
 - 소개 페이지: `docs/index.html` / 개인정보처리방침: `docs/privacy.html` (Settings → Pages → `docs` 폴더)

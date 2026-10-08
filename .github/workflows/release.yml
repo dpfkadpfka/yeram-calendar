@@ -22,10 +22,10 @@ jobs:
       - name: 구글 키 넣기 (Secrets에서)
         shell: pwsh
         env:
-          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID || '160366740612-ng34jo8ervjdh89ge3b6lqc3amunfhn9.apps.googleusercontent.com' }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
         run: |
-          if (-not $env:GOOGLE_CLIENT_ID) { Write-Error 'GOOGLE_CLIENT_ID Secret이 없어요'; exit 1 }
+          if (-not $env:GOOGLE_CLIENT_SECRET) { Write-Error 'GOOGLE_CLIENT_SECRET Secret이 없어요'; exit 1 }
           @{ clientId = $env:GOOGLE_CLIENT_ID; clientSecret = $env:GOOGLE_CLIENT_SECRET } | ConvertTo-Json | Set-Content -Encoding utf8 creds.json
       - name: 저장소 주소 설정 (자동 업데이트용)
         run: npm pkg set "repository.url=https://github.com/${{ github.repository }}"
