@@ -78,7 +78,32 @@
     for (let i = 0; i < Math.floor(14 * area) + 5; i++) { const x = r() * w, y = r() * h, R = 1 + r() * 1.4; glow(ctx, x, y, R * 5, 'rgba(220,230,255,1)', 0.35); ctx.globalAlpha = 1; ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(x, y, R * 0.6, 0, Math.PI * 2); ctx.fill(); }
     ctx.globalAlpha = 1;
   }
-  const FX = { stars, galaxy };
+  // 소노마식 물결: 아래에서 겹겹이 올라오는 부드러운 곡선 띠(색은 위→아래)
+  function wavesWith(colors, shadow) {
+    return function (ctx, w, h) {
+      const n = colors.length;
+      for (let i = 0; i < n; i++) {
+        const base = h * (0.18 + 0.82 * (i / n)), amp = h * (0.07 + 0.03 * (i % 2)), ph = i * 1.7 + 0.6, k = (1.1 + 0.25 * (i % 3)) * Math.PI / w;
+        ctx.beginPath(); ctx.moveTo(0, h);
+        for (let x = 0; x <= w + 8; x += 8) ctx.lineTo(x, base + Math.sin(x * k + ph) * amp + Math.sin(x * k * 2.3 + ph * 1.3) * amp * 0.25);
+        ctx.lineTo(w, h); ctx.closePath();
+        const g = ctx.createLinearGradient(0, base - amp, w, base + amp * 2); g.addColorStop(0, colors[i][0]); g.addColorStop(1, colors[i][1]);
+        ctx.save(); ctx.shadowColor = shadow; ctx.shadowBlur = 40; ctx.shadowOffsetY = -6; ctx.fillStyle = g; ctx.fill(); ctx.restore();
+      }
+    };
+  }
+  // 필름 같은 잔잔한 입자(그라데이션을 덜 밋밋하게)
+  function grain(ctx, w, h) {
+    const r = rng(77), c = document.createElement('canvas'); c.width = 160; c.height = 160;
+    const x = c.getContext('2d'), im = x.createImageData(160, 160);
+    for (let i = 0; i < im.data.length; i += 4) { const v = r() * 255; im.data[i] = im.data[i + 1] = im.data[i + 2] = v; im.data[i + 3] = 22; }
+    x.putImageData(im, 0, 0); ctx.fillStyle = ctx.createPattern(c, 'repeat'); ctx.fillRect(0, 0, w, h);
+  }
+  const both = (a, b) => (ctx, w, h) => { a(ctx, w, h); b(ctx, w, h); };
+  const wavesSunset = wavesWith([['#ffd9c2', '#ffc0cf'], ['#ffb199', '#ff9fb8'], ['#ff9478', '#f58bb5'], ['#e9739a', '#b98cf0'], ['#a77fe6', '#7e8cf2']], 'rgba(120,60,90,.18)');
+  const wavesNight = wavesWith([['#1c2350', '#2a2163'], ['#2b2f7a', '#4a2c86'], ['#3f3fa8', '#6a35a6'], ['#5b4fd0', '#9b46b8'], ['#7b6cf0', '#c35bc9']], 'rgba(0,0,0,.45)');
+  const wavesMint = wavesWith([['#dff7ee', '#d7f0fb'], ['#bdeedd', '#b8e3f7'], ['#93e0c8', '#94d2f2'], ['#64cfb0', '#6db9ec'], ['#3fb79a', '#4f9be0']], 'rgba(20,90,90,.16)');
+  const FX = { stars, galaxy, grain, wavesSunset: both(wavesSunset, grain), wavesNight: both(wavesNight, grain), wavesMint: both(wavesMint, grain), starsGrain: both(stars, grain) };
   function draw(name, canvas, cssW, cssH, dpr) {
     const fn = FX[name]; if (!fn) return false;
     dpr = dpr || 1; canvas.width = Math.max(1, Math.round(cssW * dpr)); canvas.height = Math.max(1, Math.round(cssH * dpr));

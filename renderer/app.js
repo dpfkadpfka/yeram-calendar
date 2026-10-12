@@ -573,6 +573,15 @@
     aurora: D('오로라', '#041a20', ['#2ff3a0', '#b06cff', '#1fb5c9', '#3d8bff'], '5c', DP('#071c22', '#0f262d', '#45f0b0', '#e6fbf4', '#95bdb4', '#1e3e45'), 'stars'),
     deepsea: D('깊은 바다', '#031d2e', ['#1f8fc4', '#ff8a6b', '#0e6f9a', '#3fd0d0'], '5c', DP('#04243a', '#0b2b3e', '#ff8a6b', '#e6f6ff', '#93b4c6', '#18425a')),
     wine: D('와인 & 골드', '#220b15', ['#e8c26a', '#b0305a', '#8a2450', '#ff8a7a'], '55', DP('#2c101c', '#381624', '#e8c26a', '#fbeef2', '#c9a3b0', '#55253a')),
+    // 새 스킨 후보
+    cotton: Object.assign(L('솜사탕 하늘', '#f7eefc', ['#ffb3d6', '#a8d6ff', '#d2b6ff', '#ffd0b5'], LP('#f7eefc', '#d4589a', '#2f2338', '#7d6a88', '#ecdcf1')), { fx: 'grain' }),
+    holo: Object.assign(L('홀로그램', '#f2f1fb', ['#8eeeff', '#ffaee9', '#c4b2ff', '#b2ffd6'], LP('#f2f1fb', '#7a5cf0', '#262540', '#6c6a8e', '#e0def2')), { fx: 'grain' }),
+    peachfuzz: Object.assign(L('피치 퍼즈', '#fdf0e8', ['#ffbe98', '#ffd9b8', '#f4a38c', '#ffe7c7'], LP('#fdf0e8', '#e2725b', '#3a2722', '#8a6a5f', '#f2dccf')), { fx: 'grain' }),
+    sunsetwave: { name: '노을 물결', fx: 'wavesSunset', bg: 'linear-gradient(180deg,#fff1e6,#ffe3dc)', pal: LP('#fff1e6', '#e85d8a', '#33222b', '#7f6670', '#f0dcd8') },
+    mintwave: { name: '민트 물결', fx: 'wavesMint', bg: 'linear-gradient(180deg,#f2fbf8,#e9f6fb)', pal: LP('#f2fbf8', '#159c84', '#1d302b', '#5f7771', '#d8ebe5') },
+    softaurora: D('소프트 오로라', '#090b18', ['#19c9a8', '#6f55ff', '#2a66ff', '#c04bd8'], '99', DP('#0c0e1d', '#151829', '#5ef0c8', '#eef1fb', '#a6adc6', '#262b44'), 'starsGrain'),
+    nightwave: { name: '밤 물결', dark: true, fx: 'wavesNight', bg: 'linear-gradient(180deg,#0b0d22,#14123a)', pal: DP('#0e1030', '#181a3c', '#b49cff', '#f0eeff', '#aaa8cc', '#2b2c58') },
+    neon: D('네온 시티', '#0b0614', ['#ff3cac', '#2bd2ff', '#784ba0', '#ff8a3c'], '8c', DP('#0d0818', '#171124', '#ff5cbc', '#f7eefb', '#b5a7c4', '#2e2340'), 'grain'),
     mocha: D('모카 라떼', '#1a120e', ['#f2a27c', '#a0623e', '#d9a066', '#7a5240'], '4d', DP('#211813', '#2b201a', '#f2a27c', '#f4ebe3', '#c0aa9a', '#44342b'))
   };
   const DEFAULT_SCENE = 'pastel';
