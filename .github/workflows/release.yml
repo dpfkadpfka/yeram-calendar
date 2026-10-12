@@ -29,13 +29,16 @@ jobs:
           @{ clientId = $env:GOOGLE_CLIENT_ID; clientSecret = $env:GOOGLE_CLIENT_SECRET } | ConvertTo-Json | Set-Content -Encoding utf8 creds.json
       - name: 저장소 주소 설정 (자동 업데이트용)
         run: npm pkg set "repository.url=https://github.com/${{ github.repository }}"
-      - name: 버전 태그 만들기 (없을 때만)
+      - name: 버전 태그·릴리스 미리 만들기 (중복 릴리스 방지)
         shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           V="v$(node -p "require('./package.json').version")"
           if ! git ls-remote --exit-code --tags origin "refs/tags/$V" >/dev/null; then
             git tag "$V" && git push origin "$V"
           fi
+          gh release view "$V" >/dev/null 2>&1 || gh release create "$V" --title "$V" --notes "예람달력 $V"
       - name: 설치 파일 만들고 릴리스에 올리기
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
