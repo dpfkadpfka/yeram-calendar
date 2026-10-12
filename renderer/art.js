@@ -234,11 +234,91 @@
     const v = ctx.createRadialGradient(w / 2, h / 2, m * 0.3, w / 2, h / 2, Math.hypot(w, h) * 0.6); v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,.55)');
     ctx.globalAlpha = 1; ctx.fillStyle = v; ctx.fillRect(0, 0, w, h);
   }
+  // HUD v2: 군더더기 없이 큰 조준 링 하나(오른쪽 아래로 잘림) + 옅은 육각 메시 + 가는 눈금
+  function hud2(ctx, w, h) {
+    const m = Math.min(w, h), C = (a) => 'rgba(90,215,255,' + a + ')';
+    // 육각 메시(가장자리로 갈수록 옅게)
+    const R = m * 0.035, hx = R * Math.sqrt(3);
+    ctx.lineWidth = 1;
+    for (let row = 0, y = 0; y < h + R; row++, y += R * 1.5) for (let x = (row % 2) * hx / 2; x < w + hx; x += hx) {
+      const fade = Math.max(0, 1 - Math.hypot(x - w * 0.78, y - h * 0.72) / (m * 1.1));
+      if (fade < 0.05) continue; ctx.strokeStyle = C(0.07 * fade); ctx.beginPath();
+      for (let k = 0; k < 6; k++) { const a = Math.PI / 6 + k * Math.PI / 3; const px = x + Math.cos(a) * R, py = y + Math.sin(a) * R; k ? ctx.lineTo(px, py) : ctx.moveTo(px, py); }
+      ctx.closePath(); ctx.stroke();
+    }
+    const cx = w * 0.80, cy = h * 0.74, B = m * 0.62;
+    glow(ctx, cx, cy, B * 1.2, 'rgba(40,170,255,1)', 0.16);
+    const arc = (r, a0, a1, lw, al) => { ctx.lineWidth = lw; ctx.strokeStyle = C(al); ctx.beginPath(); ctx.arc(cx, cy, r, a0, a1); ctx.stroke(); };
+    arc(B, 0, Math.PI * 2, 1, 0.25);
+    arc(B * 0.93, Math.PI * 0.95, Math.PI * 1.55, 5, 0.35);
+    arc(B * 0.93, Math.PI * 1.62, Math.PI * 1.78, 5, 0.5);
+    arc(B * 0.82, Math.PI * 1.05, Math.PI * 1.9, 1.2, 0.3);
+    arc(B * 0.70, Math.PI * 0.9, Math.PI * 1.25, 9, 0.12);
+    arc(B * 0.58, 0, Math.PI * 2, 1, 0.18);
+    arc(B * 0.45, Math.PI * 1.1, Math.PI * 1.7, 2.5, 0.35);
+    // 눈금
+    for (let t = 0; t < 120; t++) { const a = t / 120 * Math.PI * 2, l = t % 10 === 0 ? 14 : 6; ctx.strokeStyle = C(t % 10 === 0 ? 0.45 : 0.22); ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(cx + Math.cos(a) * B * 0.88, cy + Math.sin(a) * B * 0.88); ctx.lineTo(cx + Math.cos(a) * (B * 0.88 - l), cy + Math.sin(a) * (B * 0.88 - l)); ctx.stroke(); }
+    // 십자 조준선
+    ctx.strokeStyle = C(0.18); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(cx - B * 1.1, cy); ctx.lineTo(cx - B * 0.5, cy); ctx.moveTo(cx, cy - B * 1.1); ctx.lineTo(cx, cy - B * 0.5); ctx.stroke();
+    glow(ctx, cx, cy, B * 0.12, 'rgba(190,245,255,1)', 0.35);
+    // 화면 위쪽 가는 정보 줄
+    ctx.strokeStyle = C(0.25); ctx.beginPath(); ctx.moveTo(w * 0.04, h * 0.06); ctx.lineTo(w * 0.32, h * 0.06); ctx.lineTo(w * 0.35, h * 0.09); ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+  // 달빛 v2: 오른쪽 위 화면 밖에 큰 달이 있는 듯 — 테두리 빛과 퍼지는 빛줄기만
+  function moon2(ctx, w, h) {
+    const m = Math.min(w, h), cx = w * 1.02, cy = -h * 0.08, R = m * 0.55, r = rng(77);
+    glow(ctx, cx, cy, R * 2.6, 'rgba(150,170,225,1)', 0.30);
+    glow(ctx, cx, cy, R * 1.5, 'rgba(205,215,245,1)', 0.30);
+    // 달 표면은 아주 흐릿하게만
+    ctx.filter = 'blur(' + Math.round(m * 0.012) + 'px)';
+    const g = ctx.createRadialGradient(cx - R * 0.35, cy + R * 0.35, R * 0.2, cx, cy, R);
+    g.addColorStop(0, 'rgba(236,240,252,.55)'); g.addColorStop(0.85, 'rgba(206,214,240,.42)'); g.addColorStop(1, 'rgba(255,255,255,.65)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fill(); ctx.filter = 'none';
+    // 빛줄기
+    ctx.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < 7; i++) {
+      const a = Math.PI * (0.6 + i * 0.05 + r() * 0.02), len = Math.hypot(w, h) * 1.1, wd = 0.02 + r() * 0.03;
+      const gr = ctx.createLinearGradient(cx, cy, cx + Math.cos(a) * len, cy + Math.sin(a) * len); gr.addColorStop(0, 'rgba(180,195,240,.045)'); gr.addColorStop(1, 'rgba(180,195,240,0)');
+      ctx.fillStyle = gr; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a - wd) * len, cy + Math.sin(a - wd) * len); ctx.lineTo(cx + Math.cos(a + wd) * len, cy + Math.sin(a + wd) * len); ctx.closePath(); ctx.fill();
+    }
+    ctx.globalCompositeOperation = 'source-over';
+    dots(ctx, w, h, r, Math.floor(160 * w * h / 960000), ['#ffffff', '#dfe8ff']);
+  }
+  // 중세 v2: 검은 바탕 + 위아래 금박 띠(반복 문양) + 금속 광택 선 + 촛불빛
+  function medieval2(ctx, w, h) {
+    const m = Math.min(w, h);
+    const metal = (y0, y1) => { const g = ctx.createLinearGradient(0, y0, 0, y1); g.addColorStop(0, '#6e5214'); g.addColorStop(0.45, '#f6d77c'); g.addColorStop(0.55, '#c9a034'); g.addColorStop(1, '#5c430f'); return g; };
+    glow(ctx, w * 0.5, h * 0.5, Math.hypot(w, h) * 0.55, 'rgba(120,80,25,1)', 0.16);
+    const band = (y, dir) => {
+      const H = m * 0.035;
+      ctx.fillStyle = metal(y, y + 2); ctx.fillRect(0, y, w, 2);
+      ctx.fillStyle = metal(y + dir * H, y + dir * H + 1.5); ctx.fillRect(0, y + dir * H, w, 1.5);
+      // 반복 문양: 마름모 + 양쪽 덩굴
+      const step = H * 2.2;
+      ctx.strokeStyle = 'rgba(214,176,70,.55)'; ctx.lineWidth = 1.2;
+      for (let x = step / 2; x < w; x += step) {
+        const yc = y + dir * H / 2;
+        ctx.beginPath(); ctx.moveTo(x, yc - H * 0.32); ctx.lineTo(x + H * 0.26, yc); ctx.lineTo(x, yc + H * 0.32); ctx.lineTo(x - H * 0.26, yc); ctx.closePath(); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x + H * 0.32, yc); ctx.bezierCurveTo(x + H * 0.6, yc - H * 0.35, x + H * 0.85, yc + H * 0.35, x + step / 2, yc); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x - H * 0.32, yc); ctx.bezierCurveTo(x - H * 0.6, yc + H * 0.35, x - H * 0.85, yc - H * 0.35, x - step / 2, yc); ctx.stroke();
+      }
+    };
+    band(3, 1); band(h - 3, -1);
+    // 옆 금속 기둥선
+    ctx.fillStyle = metal(0, 2); ctx.globalAlpha = 0.7; ctx.fillRect(3, 0, 1.5, h); ctx.fillRect(w - 4.5, 0, 1.5, h); ctx.globalAlpha = 1;
+    // 은은한 문장 없는 다마스크 무늬
+    ctx.strokeStyle = 'rgba(212,175,55,.06)'; ctx.lineWidth = 1; const st = m * 0.16;
+    for (let y = st; y < h; y += st) for (let x = ((y / st) % 2) * st / 2; x < w + st; x += st) { ctx.beginPath(); ctx.ellipse(x, y, st * 0.18, st * 0.32, 0, 0, Math.PI * 2); ctx.stroke(); ctx.beginPath(); ctx.ellipse(x, y, st * 0.32, st * 0.12, 0, 0, Math.PI * 2); ctx.stroke(); }
+    const v = ctx.createRadialGradient(w / 2, h / 2, m * 0.35, w / 2, h / 2, Math.hypot(w, h) * 0.62); v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,.6)');
+    ctx.fillStyle = v; ctx.fillRect(0, 0, w, h);
+  }
   const both = (a, b) => (ctx, w, h) => { a(ctx, w, h); b(ctx, w, h); };
   const wavesSunset = wavesWith([['#ffd9c2', '#ffc0cf'], ['#ffb199', '#ff9fb8'], ['#ff9478', '#f58bb5'], ['#e9739a', '#b98cf0'], ['#a77fe6', '#7e8cf2']], 'rgba(120,60,90,.18)');
   const wavesNight = wavesWith([['#1c2350', '#2a2163'], ['#2b2f7a', '#4a2c86'], ['#3f3fa8', '#6a35a6'], ['#5b4fd0', '#9b46b8'], ['#7b6cf0', '#c35bc9']], 'rgba(0,0,0,.45)');
   const wavesMint = wavesWith([['#dff7ee', '#d7f0fb'], ['#bdeedd', '#b8e3f7'], ['#93e0c8', '#94d2f2'], ['#64cfb0', '#6db9ec'], ['#3fb79a', '#4f9be0']], 'rgba(20,90,90,.16)');
-  const FX = { hud, moon, medieval, stars, galaxy, wavesSunset, wavesNight, wavesMint, starsGrain: stars, grain: () => {}, oilSoft: oilWith(0.6), oilMid: oilWith(1), oilStrong: oilWith(1.6) };
+  const FX = { hud, moon, medieval, hud2, moon2, medieval2, stars, galaxy, wavesSunset, wavesNight, wavesMint, starsGrain: stars, grain: () => {}, oilSoft: oilWith(0.6), oilMid: oilWith(1), oilStrong: oilWith(1.6) };
   function draw(name, canvas, cssW, cssH, dpr) {
     const fn = FX[name]; if (!fn) return false;
     dpr = dpr || 1; canvas.width = Math.max(1, Math.round(cssW * dpr)); canvas.height = Math.max(1, Math.round(cssH * dpr));

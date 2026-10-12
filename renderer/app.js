@@ -302,10 +302,12 @@
   }
   function applyFoot() {
     const open = S.cfg.footOpen !== false;
-    // 메모는 오른쪽 아래 상자에 따로(캘린더 칸과 겹치지 않음)
-    $('foot-memo').classList.toggle('closed', !open);
-    $('noteCount').textContent = notesOf().length || '';
-    $('footClose').textContent = open ? '접기' : '펼치기';
+    // 메모는 하단 바에, 열기/닫기 버튼은 늘 하단 바 오른쪽 끝(캘린더 칸과 겹치지 않음)
+    $('foot').classList.toggle('memo-closed', !open);
+    const cnt = notesOf().length;
+    $('footClose').firstChild.textContent = open ? '▾ 메모 접기 ' : '▴ 메모 ';
+    $('noteCount').textContent = cnt || '';
+    $('footClose').title = open ? '메모 접기' : '메모 펼치기';
     if (open) renderNotes();
   }
   function renderNotes() {
@@ -650,7 +652,7 @@
     plain: L('단색', '#eef0f4', [null, null, null, null], LP('#eef0f4', '#2f5bd3')),
     // 어두운 테마 — 같은 번짐을 어두운 바탕 위에
     pastelnight: D('파스텔 나이트', '#15161d', ['#7b9cff', '#ff8cbe', '#6edcc8', '#ffc86e'], '5c', DP('#15161d', '#20222c', '#9db3ff')),
-    starry: D('별이 빛나는 밤', '#0a1844', ['#f6d14a', '#3d7be0', '#2a4fb0', '#6fa8ff'], '66', DP('#0e2154', '#16295c', '#f6d14a', '#eef2ff', '#a9b7dd', '#2b437c'), 'stars'),
+    starry: D('별이 빛나는 밤', '#0a1844', ['#f6d14a', '#3d7be0', '#2a4fb0', '#6fa8ff'], '66', DP('#0e2154', '#16295c', '#f6d14a', '#eef2ff', '#a9b7dd', '#2b437c'), 'oilSoft'),
     galaxy: D('은하수', '#04050f', ['#3b2a7a', '#1d3a7a', '#5a2a6a', '#16305a'], '80', DP('#070816', '#141629', '#c9b8ff', '#f1eeff', '#a9a6ca', '#272b4e'), 'galaxy'),
     aurora: D('오로라', '#041a20', ['#2ff3a0', '#b06cff', '#1fb5c9', '#3d8bff'], '5c', DP('#071c22', '#0f262d', '#45f0b0', '#e6fbf4', '#95bdb4', '#1e3e45'), 'stars'),
     deepsea: D('깊은 바다', '#031d2e', ['#1f8fc4', '#ff8a6b', '#0e6f9a', '#3fd0d0'], '5c', DP('#04243a', '#0b2b3e', '#ff8a6b', '#e6f6ff', '#93b4c6', '#18425a')),
@@ -664,12 +666,6 @@
     softaurora: D('소프트 오로라', '#090b18', ['#19c9a8', '#6f55ff', '#2a66ff', '#c04bd8'], '99', DP('#0c0e1d', '#151829', '#5ef0c8', '#eef1fb', '#a6adc6', '#262b44'), 'starsGrain'),
     nightwave: { name: '밤 물결', dark: true, fx: 'wavesNight', bg: 'linear-gradient(180deg,#0b0d22,#14123a)', pal: DP('#0e1030', '#181a3c', '#b49cff', '#f0eeff', '#aaa8cc', '#2b2c58') },
     neon: D('네온 시티', '#0b0614', ['#ff3cac', '#2bd2ff', '#784ba0', '#ff8a3c'], '8c', DP('#0d0818', '#171124', '#ff5cbc', '#f7eefb', '#b5a7c4', '#2e2340'), 'grain'),
-    hud: { name: 'HUD', dark: true, fx: 'hud', bg: 'radial-gradient(60% 50% at 80% 30%,rgba(20,120,170,.35),transparent 70%),radial-gradient(50% 45% at 15% 85%,rgba(20,90,140,.3),transparent 70%),linear-gradient(170deg,#030b14 0%,#06141f 55%,#020910 100%)',
-      pal: DP('#04101a', '#0a1b28', '#4fd8ff', '#dff6ff', '#86b3c6', '#15384a') },
-    moonlight: { name: '달빛', dark: true, fx: 'moon', bg: 'radial-gradient(70% 60% at 74% 30%,rgba(90,110,170,.45),transparent 70%),linear-gradient(175deg,#0b1024 0%,#141a36 55%,#0a0e20 100%)',
-      pal: DP('#0e1328', '#171d38', '#cdd8ff', '#eef1fb', '#a7b0cf', '#2a3156') },
-    medieval: { name: '중세 골드', dark: true, fx: 'medieval', gline: 'rgba(212,175,55,.42)', font: '"Batang","바탕","Noto Serif KR",serif', bg: 'linear-gradient(170deg,#100c07 0%,#0a0806 60%,#060504 100%)',
-      pal: DP('#0e0b07', '#1a140c', '#d4af37', '#f2e6c4', '#b9a77c', '#3d3018') },
     mocha: D('모카 라떼', '#1a120e', ['#f2a27c', '#a0623e', '#d9a066', '#7a5240'], '4d', DP('#211813', '#2b201a', '#f2a27c', '#f4ebe3', '#c0aa9a', '#44342b'))
   };
   // ---------- 입체(3D) 스킨: 바탕·카드·그림자·하이라이트 한 벌 ----------
@@ -701,7 +697,7 @@
   };
   const skin3dOf = (c) => (c.style === '3d' && SKINS3D[c.skin3d]) || (c.style === 'flat' && SKINSFLAT[c.skinFlat]) || null;
   const DEFAULT_SCENE = 'pastel';
-  const SCENE_ALIAS = { lavender: 'lilac', apricot: 'peach', charcoal: 'pastelnight' };
+  const SCENE_ALIAS = { lavender: 'lilac', apricot: 'peach', charcoal: 'pastelnight', hud: 'galaxy', moonlight: 'galaxy', medieval: 'pastelnight' };
   function photoScene(c) {
     const dk = !!c.bgImageDark, dim = (c.bgImageDim == null ? 15 : +c.bgImageDim) / 100;
     const ov = dk ? 'rgba(0,0,0,' + dim + ')' : 'rgba(255,255,255,' + dim + ')';
