@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld('api', {
   patch: call('ev:patch'),
   remove: call('ev:delete'),
   win: call('win:action'),
+  syncPull: call('sync:pull'),
   on: (ch, fn) => {
     if (!['app:focus', 'app:refresh', 'app:cfg', 'app:update', 'app:settings'].includes(ch)) return;
     ipcRenderer.on(ch, (_e, arg) => fn(arg));

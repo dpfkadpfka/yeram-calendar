@@ -438,3 +438,41 @@ body.settings-mode #stClose{display:none}
 @media (max-width:520px){.st-wrap{flex-direction:column}.st-nav{position:static;width:auto;flex-direction:row;flex-wrap:wrap}}
 .notes.only-add{padding:0 4px 2px}
 .notes.only-add .note-add{height:26px;width:auto;padding:0 12px;border-radius:8px}
+
+.chead .demoji{font-size:13px;line-height:1;margin-left:2px;align-self:center;font-family:"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif}
+.emorow{display:flex;flex-wrap:wrap;gap:3px;max-width:330px}
+.emorow .emo{width:26px;height:24px;padding:0;font-size:15px;line-height:22px;border-radius:6px;font-family:"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif}
+.emorow .emo[aria-pressed="true"]{outline:2px solid var(--accent);outline-offset:-1px}
+.emorow .def{padding:0 6px;height:24px;font-size:11.5px}
+.emorow .emoin{width:96px;height:24px;padding:0 6px;font-size:12px}
+.st-nav .st-ic{display:inline-flex;width:18px;height:18px;align-items:center;justify-content:center;color:var(--muted);opacity:.85}
+.st-nav button[aria-selected="true"] .st-ic{color:var(--accent);opacity:1}
+
+.seg{display:flex;gap:4px;padding:4px;border-radius:12px;background:color-mix(in srgb,var(--fg) 6%,transparent)}
+.seg button{flex:1;padding:8px 6px;border-radius:9px;font-weight:700;font-size:13px;color:var(--muted);background:none!important;border:0!important;box-shadow:none!important;backdrop-filter:none!important}
+.seg button small{display:block;font-weight:500;font-size:10.5px;opacity:.8}
+.seg button[aria-pressed="true"]{background:var(--surface)!important;color:var(--accent);box-shadow:0 1px 4px rgba(0,0,0,.12)!important}
+
+/* 제목 눌러 월·날짜 이동 */
+#monthTitle{cursor:pointer;border-radius:8px;padding:0 6px;-webkit-app-region:no-drag}
+#monthTitle:hover{background:color-mix(in srgb,var(--fg) 7%,transparent)}
+.jump{position:fixed;z-index:60;width:268px;padding:10px;border-radius:14px;background:var(--surface);border:1px solid var(--line);box-shadow:0 16px 40px rgba(0,0,0,.25);display:flex;flex-direction:column;gap:8px;-webkit-app-region:no-drag}
+:root[data-style="glass"] .jump{background:var(--glass2);border-color:var(--gline);backdrop-filter:blur(22px) saturate(170%)}
+.jump-head{display:flex;align-items:center;justify-content:space-between}
+.jump-head b{font-size:14px}
+.jump-months{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+.jump-months .jm{padding:6px 0;font-size:12.5px;border-radius:8px}
+.jump-months .jm.now{color:var(--accent);font-weight:700}
+.jump-months .jm.cur{background:var(--accent)!important;color:#fff!important;border-color:transparent!important}
+.jump-months .jm[aria-pressed="true"]:not(.cur){outline:1.5px solid var(--accent);outline-offset:-1px}
+.jump-mini{border-top:1px solid var(--line);padding-top:6px}
+.jmini-t{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:4px}
+.jmini-g{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center}
+.jmini-g .jdow{font-size:10.5px;color:var(--muted)}
+.jmini-g .jd{padding:3px 0;font-size:12px;border-radius:6px;background:none!important;border:0!important;box-shadow:none!important;backdrop-filter:none!important}
+.jmini-g .jd:hover{background:color-mix(in srgb,var(--accent) 16%,transparent)!important}
+.jmini-g .jd.sun{color:#e5484d}.jmini-g .jd.sat{color:#3b82f6}
+.jmini-g .jd.now{font-weight:800;color:var(--accent)}
+.jmini-g .jd.sel{background:var(--accent)!important;color:#fff}
+.jump-foot{display:flex;justify-content:flex-end}
+.jump-foot button{font-size:12px;padding:3px 10px}

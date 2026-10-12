@@ -1,10 +1,13 @@
-// 예람달력 — 구글 캘린더 연동 바탕화면 달력 (Electron main process)
+// Ram Calendar(구 예람달력) — 구글 캘린더 연동 바탕화면 달력 (Electron main process)
 const { app, BrowserWindow, ipcMain, shell, Tray, Menu, nativeImage, safeStorage, screen, session } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
 const crypto = require('crypto');
 const os = require('os');
+// 이름을 Ram Calendar로 바꿔도 예전 설정·로그인(예람달력 폴더)을 그대로 쓰도록 저장 위치 고정
+try { app.setPath('userData', path.join(app.getPath('appData'), '예람달력')); } catch {}
+const APP_NAME = 'Ram Calendar';
 // 윈도우 11(22H2 이상)이면 바탕화면이 비치는 진짜 유리(아크릴) 효과 사용
 const ACRYLIC = process.platform === 'win32' && Number((os.release().split('.')[2]) || 0) >= 22621;
 
@@ -70,10 +73,10 @@ function login() {
       if (u.pathname !== '/') { res.writeHead(404); res.end(); return; }
       const code = u.searchParams.get('code');
       const err = u.searchParams.get('error');
-      const page = (msg) => `<!doctype html><meta charset="utf-8"><title>예람달력</title><body style="font-family:'Malgun Gothic',sans-serif;padding:40px;font-size:18px">${msg}</body>`;
+      const page = (msg) => `<!doctype html><meta charset="utf-8"><title>Ram Calendar</title><body style="font-family:'Malgun Gothic',sans-serif;padding:40px;font-size:18px">${msg}</body>`;
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
       if (err || !code || u.searchParams.get('state') !== state) {
-        res.end(page('로그인이 취소됐어요. 예람달력에서 다시 시도해 주세요.'));
+        res.end(page('로그인이 취소됐어요. Ram Calendar에서 다시 시도해 주세요.'));
         finish(new Error(err || 'LOGIN_FAILED'));
         return;
       }
@@ -91,7 +94,7 @@ function login() {
         if (!r.ok || !j.refresh_token) throw new Error(j.error_description || j.error || 'NO_REFRESH_TOKEN');
         cfg.refreshToken = enc(j.refresh_token); saveCfg();
         accessToken = j.access_token; accessExp = Date.now() + (j.expires_in - 60) * 1000;
-        res.end(page('✅ 로그인 완료! 이 창을 닫고 예람달력으로 돌아가세요.'));
+        res.end(page('✅ 로그인 완료! 이 창을 닫고 Ram Calendar로 돌아가세요.'));
         finish(null);
       } catch (e) {
         res.end(page('로그인 중 문제가 생겼어요: ' + String(e.message).replace(/</g, '&lt;')));
@@ -151,6 +154,41 @@ async function api(method, p, query, body) {
 }
 const enc1 = encodeURIComponent;
 
+// ---------- 메모·칸 색 동기화 ----------
+// 새 권한 없이, 내 기본 캘린더의 2000-01-01 숨은 일정 하나에 JSON으로 저장한다(어느 컴퓨터든 같은 구글 계정이면 같은 메모).
+const SYNC_KEYS = ['notes', 'dayColors', 'dayBorders', 'dayEmojis'];
+let syncEventId = null, pushTimer = null;
+async function findSyncEvent() {
+  const r = await api('GET', '/calendars/primary/events', { privateExtendedProperty: 'ramcal=sync', timeMin: '1999-12-01T00:00:00Z', timeMax: '2000-02-01T00:00:00Z', singleEvents: 'true', maxResults: '5' });
+  return (r.items || [])[0] || null;
+}
+async function pushSync() {
+  clearTimeout(pushTimer); pushTimer = null;
+  if (!cfg.refreshToken) return;
+  const data = { v: 1, at: cfg.syncAt || Date.now() };
+  SYNC_KEYS.forEach(k => { data[k] = cfg[k] || (k === 'notes' ? [] : {}); });
+  const body = { summary: 'Ram Calendar 메모 동기화 (지우지 마세요)', description: JSON.stringify(data), start: { date: '2000-01-01' }, end: { date: '2000-01-02' },
+    transparency: 'transparent', visibility: 'private', extendedProperties: { private: { ramcal: 'sync' } } };
+  if (!syncEventId) { const ev = await findSyncEvent(); if (ev) syncEventId = ev.id; }
+  if (syncEventId) {
+    try { await api('PATCH', `/calendars/primary/events/${enc1(syncEventId)}`, null, body); return; }
+    catch (e) { if (!/404|410/.test(e.code || '')) throw e; syncEventId = null; }
+  }
+  const ev = await api('POST', '/calendars/primary/events', null, body); syncEventId = ev.id;
+}
+async function pullSync() {
+  if (!cfg.refreshToken) return false;
+  const ev = await findSyncEvent();
+  if (!ev) { if (SYNC_KEYS.some(k => cfg[k] && Object.keys(cfg[k]).length)) { cfg.syncAt = cfg.syncAt || Date.now(); await pushSync(); } return false; }
+  syncEventId = ev.id;
+  let data = {}; try { data = JSON.parse(ev.description || '{}'); } catch {}
+  const remoteAt = +data.at || 0, localAt = +cfg.syncAt || 0;
+  if (remoteAt > localAt) { SYNC_KEYS.forEach(k => { if (k in data) cfg[k] = data[k]; }); cfg.syncAt = remoteAt; saveCfg(); return true; }
+  if (localAt > remoteAt) await pushSync();
+  return false;
+}
+function schedulePush() { clearTimeout(pushTimer); pushTimer = setTimeout(() => pushSync().catch(() => {}), 1500); }
+
 // ---------- IPC ----------
 function wrap(fn) {
   return async (_e, ...args) => {
@@ -161,12 +199,14 @@ function wrap(fn) {
 
 ipcMain.handle('cfg:get', wrap(async () => publicCfg()));
 ipcMain.handle('cfg:set', wrap(async (patch) => {
-  const allowed = ['clientId', 'clientSecret', 'hiddenCalendars', 'opacity', 'theme', 'alwaysOnTop', 'locked', 'autoStart', 'weekStart', 'panelOpen', 'panelMode', 'fontFamily', 'fontSize', 'accent', 'bgColor', 'style', 'hoverZoom', 'scene', 'glassSeeThrough', 'dayColors', 'dayBorders', 'notes', 'footOpen', 'skin3d', 'bgImage', 'bgImageDark', 'bgImageDim'];
+  const allowed = ['clientId', 'clientSecret', 'hiddenCalendars', 'opacity', 'theme', 'alwaysOnTop', 'locked', 'autoStart', 'weekStart', 'panelOpen', 'panelMode', 'fontFamily', 'fontSize', 'accent', 'bgColor', 'style', 'hoverZoom', 'scene', 'glassSeeThrough', 'dayColors', 'dayBorders', 'dayEmojis', 'notes', 'footOpen', 'skin3d', 'skinFlat', 'bgImage', 'bgImageDark', 'bgImageDim'];
   for (const k of Object.keys(patch || {})) if (allowed.includes(k)) cfg[k] = patch[k];
   if ('clientId' in patch || 'clientSecret' in patch) { cfg.clientId = String(cfg.clientId || '').trim(); cfg.clientSecret = String(cfg.clientSecret || '').trim(); }
+  if (SYNC_KEYS.some(k => k in (patch || {}))) { cfg.syncAt = Date.now(); schedulePush(); }
   saveCfg(); applyWindowCfg();
   return publicCfg();
 }));
+ipcMain.handle('sync:pull', wrap(async () => ({ changed: await pullSync(), cfg: publicCfg() })));
 ipcMain.handle('auth:login', wrap(async () => { await login(); if (win) { win.webContents.send('app:cfg'); win.webContents.send('app:refresh'); } return publicCfg(); }));
 ipcMain.handle('auth:logout', wrap(async () => {
   const rt = dec(cfg.refreshToken);
@@ -262,7 +302,7 @@ function openSettingsWindow() {
   let x = b.x - w - 12; if (x < wa.x) x = Math.min(b.x + b.width + 12, wa.x + wa.width - w); if (x < wa.x) x = wa.x + 20;
   settingsDone = false;
   settingsWin = new BrowserWindow({
-    width: w, height: h, x, y: Math.max(wa.y, b.y), minWidth: 420, minHeight: 360, title: '예람달력 설정', icon: iconPath(),
+    width: w, height: h, x, y: Math.max(wa.y, b.y), minWidth: 420, minHeight: 360, title: 'Ram Calendar 설정', icon: iconPath(),
     autoHideMenuBar: true, alwaysOnTop: !!cfg.alwaysOnTop, backgroundColor: '#f6f7f9', show: false,
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true }
   });
@@ -284,7 +324,7 @@ function createWindow() {
   if (!visible) b = { width: 980, height: 660, x: wa.x + wa.width - 1000, y: wa.y + 20 };
   win = new BrowserWindow({
     ...b, minWidth: cfg.mini ? 240 : 560, minHeight: cfg.mini ? 200 : 420, titleBarStyle: 'hidden', show: false, skipTaskbar: false,
-    backgroundColor: '#f6f7f9', title: '예람달력', icon: iconPath(), autoHideMenuBar: true,
+    backgroundColor: '#f6f7f9', title: APP_NAME, icon: iconPath(), autoHideMenuBar: true,
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true }
   });
   win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
@@ -299,7 +339,7 @@ function createWindow() {
 
 function trayMenu() {
   return Menu.buildFromTemplate([
-    { label: '예람달력 열기', click: () => { win.show(); win.focus(); } },
+    { label: 'Ram Calendar 열기', click: () => { win.show(); win.focus(); } },
     { label: '새로고침', click: () => win.webContents.send('app:refresh') },
     { label: '업데이트 확인 (현재 v' + app.getVersion() + ')', click: () => checkUpdate(true) },
     { type: 'separator' },
@@ -343,13 +383,17 @@ if (!app.requestSingleInstanceLock()) {
     createWindow();
     try {
       tray = new Tray(nativeImage.createFromPath(iconPath()).resize({ width: 16, height: 16 }));
-      tray.setToolTip('예람달력');
+      tray.setToolTip(APP_NAME);
       tray.setContextMenu(trayMenu());
       setTimeout(() => checkUpdate(false), 8000);
       setInterval(() => checkUpdate(false), 6 * 60 * 60 * 1000);
       tray.on('click', () => { if (win.isVisible() && win.isFocused()) win.hide(); else { win.show(); win.focus(); } });
     } catch (e) { console.error(e); }
   });
-  app.on('before-quit', () => { quitting = true; });
+  app.on('before-quit', (e) => {
+    quitting = true;
+    // 아직 못 올린 메모가 있으면 올리고 끄기(최대 4초)
+    if (pushTimer) { e.preventDefault(); clearTimeout(pushTimer); pushTimer = null; Promise.race([pushSync(), new Promise(r => setTimeout(r, 4000))]).catch(() => {}).finally(() => app.quit()); }
+  });
   app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
 }

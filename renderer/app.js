@@ -107,6 +107,7 @@
       const tint = (S.cfg.dayColors || {})[d]; if (tint) { c.classList.add('tinted'); c.style.setProperty('--tint', tint); }
       const bord = (S.cfg.dayBorders || {})[d]; if (bord) { c.classList.add('bordered'); c.style.setProperty('--bord', bord); }
       const head = el('div', 'chead'); head.appendChild(el('span', 'num', String(+d.slice(8))));
+      const demo = (S.cfg.dayEmojis || {})[d]; if (demo) { const de = el('span', 'demoji', demo); de.title = '오른쪽 클릭해서 바꾸기'; head.appendChild(de); }
       if (hol) head.appendChild(el('span', 'hname', hol.title));
       c.appendChild(head);
       const chips = el('div', 'chips');
@@ -214,6 +215,7 @@
   const TINTS = ['#ffd6e0', '#ffe3c2', '#fff1a8', '#d7f5c8', '#c9ecf7', '#d5dcff', '#e8d5ff', '#e2e5ea', '#ff9aa8', '#7fd1ae'];
   let tintEl = null;
   function closeTint() { if (tintEl) { tintEl.remove(); tintEl = null; } }
+  const DAY_EMOJIS = ['🎂', '🎉', '⭐', '❤️', '📌', '🔥', '✈️', '🏖️', '🎁', '📚', '💰', '☕', '🏫', '💊', '😴', '🍀'];
   const BORDERS = ['#ff5a7a', '#ff9a3c', '#f2c200', '#34b36b', '#20a4d8', '#4f6bed', '#9b5de5', '#6b7280', '#1d2330', '#ffffff'];
   function openTint(c) {
     hidePeek(); closeTint();
@@ -230,6 +232,16 @@
       m.appendChild(row);
     };
     section(md(d) + ' 칸 배경', TINTS, (S.cfg.dayColors || {})[d] || '', 'dayColors', '#ffd6e0');
+    // 날짜 옆 이모지
+    m.appendChild(el('div', 'tint-h', '날짜 옆 이모지'));
+    const curE = (S.cfg.dayEmojis || {})[d] || '';
+    const erow = el('div', 'emorow');
+    const enone = el('button', 'def', '없음'); enone.type = 'button'; enone.setAttribute('aria-pressed', String(!curE)); enone.onclick = () => setDayStyle('dayEmojis', d, ''); erow.appendChild(enone);
+    DAY_EMOJIS.forEach(em => { const b = el('button', 'emo', em); b.type = 'button'; b.setAttribute('aria-pressed', String(curE === em)); b.onclick = () => setDayStyle('dayEmojis', d, em); erow.appendChild(b); });
+    const ein = el('input', 'emoin'); ein.placeholder = '직접(윈도우+.)'; ein.maxLength = 8; ein.value = DAY_EMOJIS.includes(curE) ? '' : curE;
+    ein.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); setDayStyle('dayEmojis', d, ein.value.trim()); } });
+    ein.addEventListener('change', () => setDayStyle('dayEmojis', d, ein.value.trim()));
+    erow.appendChild(ein); m.appendChild(erow);
     section('칸 테두리', BORDERS, (S.cfg.dayBorders || {})[d] || '', 'dayBorders', '#ff5a7a');
     m.addEventListener('mousedown', (e) => e.stopPropagation());
     month.appendChild(m); tintEl = m;
@@ -268,6 +280,19 @@
     S.cfg.notes = list; $('noteCount').textContent = list.length ? list.length : '';
     clearTimeout(noteTimer); const go = () => api.setCfg({ notes: list });
     if (now) go(); else noteTimer = setTimeout(go, 500);
+  }
+  // 다른 컴퓨터에서 바꾼 메모·칸 색 받아오기(같은 구글 계정)
+  let syncBusy = false;
+  async function syncNotes() {
+    if (syncBusy || !api.syncPull) return; syncBusy = true;
+    try {
+      const r = await api.syncPull();
+      if (r.ok && r.data.changed) {
+        const typing = document.activeElement && document.activeElement.closest && document.activeElement.closest('.note');
+        ['notes', 'dayColors', 'dayBorders', 'dayEmojis'].forEach(k => { if (!(k === 'notes' && typing)) S.cfg[k] = r.data.cfg[k]; });
+        render(); applyFoot();
+      }
+    } finally { syncBusy = false; }
   }
   function applyFoot() {
     const open = S.cfg.footOpen !== false;
@@ -408,6 +433,7 @@
       if (!r.ok) return fail(r);
       S.cals = r.data; S.calMap = {}; S.cals.forEach(c => S.calMap[c.id] = c);
     }
+    syncNotes();
     const ym = S.ym, start = gridStart(ym), end = addDays(start, 42);
     S.loading = true; renderFoot();
     const r = await api.events(visibleCalIds(), parse(start).toISOString(), parse(end).toISOString());
@@ -644,7 +670,22 @@
     navygold: K('네이비 골드', true, '#121c33', 'linear-gradient(160deg,#18264a,#0e1628)', '#1d2b4b', '#edf1fa', '#9fb0d0', '#2c3d63', '#f2c14e', 'rgba(255,255,255,.07)', 'rgba(0,0,0,.42)', 'rgba(0,0,0,.58)'),
     espresso: K('에스프레소', true, '#1d1613', 'linear-gradient(160deg,#261d18,#15100e)', '#2d231e', '#f3e9e1', '#bba495', '#43352d', '#e79a5f', 'rgba(255,255,255,.07)', 'rgba(0,0,0,.42)', 'rgba(0,0,0,.58)')
   };
-  const skin3dOf = (c) => (c.style === '3d' && SKINS3D[c.skin3d]) || null;
+  // 평면(기본) 스킨: 그림자 없이 바탕·카드·선·포인트 색만
+  const F = (name, dark, bg, surface, fg, muted, line, accent) => K(name, dark, bg, bg, surface, fg, muted, line, accent, 'transparent', 'transparent', 'rgba(0,0,0,.12)');
+  const SKINSFLAT = {
+    paper: F('종이', false, '#f4f1ea', '#fffdf8', '#2b2a26', '#7a756a', '#e6e0d3', '#2f4a8a'),
+    notion: F('노트 그레이', false, '#f7f7f5', '#ffffff', '#37352f', '#787774', '#e9e9e7', '#2383e2'),
+    sky: F('하늘', false, '#eaf3fd', '#ffffff', '#1d2b45', '#5d6f90', '#d4e3f5', '#2563eb'),
+    blossom: F('벚꽃', false, '#fdf0f3', '#ffffff', '#3a2530', '#8a6b79', '#f3dbe3', '#e05a8a'),
+    sage: F('세이지', false, '#eef3ec', '#fbfdf9', '#24302a', '#66776b', '#dbe5d6', '#3f8f5f'),
+    butter: F('버터', false, '#fbf6e4', '#fffdf3', '#33301f', '#7d7660', '#ece4c6', '#d08a10'),
+    lilacflat: F('라일락', false, '#f3f0fb', '#ffffff', '#2d2640', '#76708f', '#e3ddf3', '#7c5cd6'),
+    graphite: F('그래파이트', true, '#191a1d', '#232428', '#ececee', '#9fa1a8', '#33353b', '#6aa8ff'),
+    midnight: F('미드나잇', true, '#0f1422', '#182033', '#e8edf8', '#99a6c2', '#27314a', '#7aa2ff'),
+    forestdk: F('밤의 숲', true, '#121a16', '#1a2620', '#e5f1ea', '#97b3a4', '#2a3b32', '#5fd49a'),
+    plum: F('플럼', true, '#1c1420', '#271c2d', '#f2e9f6', '#b6a2c0', '#3a2b42', '#e28ad6')
+  };
+  const skin3dOf = (c) => (c.style === '3d' && SKINS3D[c.skin3d]) || (c.style === 'flat' && SKINSFLAT[c.skinFlat]) || null;
   const DEFAULT_SCENE = 'pastel';
   const SCENE_ALIAS = { lavender: 'lilac', apricot: 'peach', charcoal: 'pastelnight' };
   function photoScene(c) {
@@ -761,10 +802,15 @@
       if (accent) b.style.setProperty('--dot', accent);
       b.onclick = () => { onPick(key); renderLook(); }; sb.appendChild(b);
     };
-    $('stSkinNote').hidden = style !== 'flat'; $('stGlassRow').hidden = style === 'flat';
-    $('stSkinTitle').textContent = style === '3d' ? '스킨 (입체)' : '스킨 (유리)';
-    $('stThemeNote').hidden = style === 'flat';
-    if (style === '3d') {
+    Array.from(document.querySelectorAll('#stStyleSeg button')).forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === style)));
+    if (style === 'flat') {
+      const cur = SKINSFLAT[c.skinFlat] ? c.skinFlat : '';
+      const pick = (k) => setDraft({ skinFlat: k });
+      const btnF = (k, v) => addBtn(cur, k, v.name, 'linear-gradient(180deg,' + v.pal.surface + ' 0 52%,' + v.pal.bg + ' 52%)', v.dark, v.pal.accent, pick);
+      label('라이트'); addBtn(cur, '', '기본', '', false, '', pick);
+      Object.entries(SKINSFLAT).filter(([, v]) => !v.dark).forEach(([k, v]) => btnF(k, v));
+      label('다크'); Object.entries(SKINSFLAT).filter(([, v]) => v.dark).forEach(([k, v]) => btnF(k, v));
+    } else if (style === '3d') {
       const cur = SKINS3D[c.skin3d] ? c.skin3d : '';
       const pick = (k) => setDraft({ skin3d: k });
       const btn3 = (k, v) => addBtn(cur, k, v.name, 'linear-gradient(180deg,' + v.pal.surface + ' 0 52%,' + v.pal.bg + ' 52%)', v.dark, v.pal.accent, pick);
@@ -899,6 +945,9 @@
 
   // ---------- 이벤트 연결 ----------
   function bind() {
+    $('monthTitle').onclick = (e) => { e.stopPropagation(); openJump(); };
+    $('monthTitle').addEventListener('mousedown', (e) => e.stopPropagation());
+    $('monthTitle').title = '눌러서 다른 달·날짜로 가기';
     $('prev').onclick = () => shiftMonth(-1); $('next').onclick = () => shiftMonth(1);
     $('todayBtn').onclick = () => { const t = todayStr(); S.sel = t; if (t.slice(0, 7) !== S.ym) { S.ym = t.slice(0, 7); load(); } else render(); };
     $('addBtn').onclick = () => openEditor(null, S.sel);
@@ -957,6 +1006,7 @@
     $('stStyle').onchange = () => { setDraft({ style: $('stStyle').value }); renderLook(); };
     $('tbOpacity').addEventListener('input', () => { const v = +$('tbOpacity').value; $('stOpacity').value = v; $('stOpVal').textContent = v + '%'; setCfg({ opacity: v / 100 }); });
     Array.from(document.querySelectorAll('#stNav button')).forEach(b => b.onclick = () => showStPage(b.dataset.page));
+    Array.from(document.querySelectorAll('#stStyleSeg button')).forEach(b => b.onclick = () => { $('stStyle').value = b.dataset.v; setDraft({ style: b.dataset.v }); renderLook(); });
     $('footClose').onclick = () => { S.cfg.footOpen = false; api.setCfg({ footOpen: false }); applyFoot(); };
     $('footOpen').onclick = () => { S.cfg.footOpen = true; api.setCfg({ footOpen: true }); applyFoot(); };
     $('panelHandle').onclick = () => { S.cfg.panelOpen = !S.cfg.panelOpen; api.setCfg({ panelOpen: S.cfg.panelOpen }); applyPanel(); };
@@ -995,6 +1045,58 @@
     S.draft = {}; renderSettings(); dlg.show();
     if (!dlg.style.left) { const z = parseFloat(document.body.style.zoom || '1') || 1; dlg.style.left = Math.max(8, (window.innerWidth / z - dlg.offsetWidth) / 2) + 'px'; dlg.style.top = '48px'; }
   }
+  // ---------- 제목 눌러 월·날짜로 바로 가기 ----------
+  let jumpEl = null;
+  function closeJump() { if (jumpEl) { jumpEl.remove(); jumpEl = null; } }
+  function openJump() {
+    if (jumpEl) { closeJump(); return; }
+    let year = +S.ym.slice(0, 4), shown = S.ym;
+    const box = el('div', 'jump'); jumpEl = box;
+    box.addEventListener('mousedown', (e) => e.stopPropagation());
+    const draw = () => {
+      box.textContent = '';
+      const head = el('div', 'jump-head');
+      const yp = el('button', 'ib', '‹'), yn = el('button', 'ib', '›'); yp.type = yn.type = 'button';
+      yp.onclick = () => { year--; draw(); }; yn.onclick = () => { year++; draw(); };
+      head.append(yp, el('b', null, year + '년'), yn); box.appendChild(head);
+      const months = el('div', 'jump-months');
+      for (let m = 1; m <= 12; m++) {
+        const key = year + '-' + pad(m), b = el('button', 'jm', m + '월'); b.type = 'button';
+        if (key === S.ym) b.classList.add('cur');
+        if (key === todayStr().slice(0, 7)) b.classList.add('now');
+        if (key === shown) b.setAttribute('aria-pressed', 'true');
+        b.onclick = () => { closeJump(); if (key !== S.ym) { S.ym = key; S.sel = key === todayStr().slice(0, 7) ? todayStr() : key + '-01'; S.events = []; render(); load(); } };
+        b.onmouseenter = () => { if (shown !== key) { shown = key; drawMini(); } };
+        months.appendChild(b);
+      }
+      box.appendChild(months);
+      const mini = el('div', 'jump-mini'); mini.id = 'jumpMini'; box.appendChild(mini); drawMini();
+      const foot = el('div', 'jump-foot'); const tb = el('button', null, '오늘로'); tb.type = 'button';
+      tb.onclick = () => { closeJump(); $('todayBtn').click(); }; foot.appendChild(tb); box.appendChild(foot);
+    };
+    const drawMini = () => {
+      const mini = box.querySelector('.jump-mini'); if (!mini) return; mini.textContent = '';
+      mini.appendChild(el('div', 'jmini-t', (+shown.slice(0, 4)) + '년 ' + (+shown.slice(5)) + '월'));
+      const g = el('div', 'jmini-g'), ws = S.cfg.weekStart || 0;
+      for (let i = 0; i < 7; i++) g.appendChild(el('span', 'jdow', '일월화수목금토'[(i + ws) % 7]));
+      const first = parse(shown + '-01'), off = (first.getDay() - ws + 7) % 7, days = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
+      for (let i = 0; i < off; i++) g.appendChild(el('span'));
+      for (let dd = 1; dd <= days; dd++) {
+        const ds = shown + '-' + pad(dd), b = el('button', 'jd', String(dd)); b.type = 'button';
+        const dw = (off + dd - 1 + ws) % 7; if (dw === 0) b.classList.add('sun'); else if (dw === 6) b.classList.add('sat');
+        if (ds === todayStr()) b.classList.add('now'); if (ds === S.sel) b.classList.add('sel');
+        b.onclick = () => { closeJump(); if (ds.slice(0, 7) !== S.ym) { S.ym = ds.slice(0, 7); S.sel = ds; S.events = []; render(); load(); } else select(ds); };
+        g.appendChild(b);
+      }
+      mini.appendChild(g);
+    };
+    draw();
+    document.body.appendChild(box);
+    const r = $('monthTitle').getBoundingClientRect(), z = parseFloat(document.body.style.zoom || '1') || 1;
+    box.style.left = Math.max(6, r.left / z - 10) + 'px'; box.style.top = (r.bottom / z + 6) + 'px';
+  }
+  document.addEventListener('mousedown', () => closeJump());
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeJump(); });
   function shiftMonth(n) {
     const y = +S.ym.slice(0, 4), m = +S.ym.slice(5) - 1 + n;
     const d = new Date(y, m, 1); S.ym = ymd(d).slice(0, 7);
@@ -1003,7 +1105,7 @@
   }
 
   async function initSettingsWindow() {
-    document.body.classList.add('settings-mode'); document.title = '예람달력 설정';
+    document.body.classList.add('settings-mode'); document.title = 'Ram Calendar 설정';
     const r = await api.getCfg(); S.cfg = r.ok ? r.data : {};
     themeApply(); bind();
     if (S.cfg.loggedIn) { const c = await api.calendars(); if (c.ok) S.cals = c.data; }

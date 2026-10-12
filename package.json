@@ -1,7 +1,7 @@
 {
   "name": "yeram-calendar",
-  "productName": "예람달력",
-  "version": "1.0.6",
+  "productName": "Ram Calendar",
+  "version": "1.1.0",
   "description": "구글 캘린더와 연동되는 바탕화면 달력",
   "main": "main.js",
   "author": "김예람",
@@ -20,8 +20,8 @@
   },
   "build": {
     "appId": "kr.yeram.calendar",
-    "productName": "예람달력",
-    "executableName": "YeramCalendar",
+    "productName": "Ram Calendar",
+    "executableName": "RamCalendar",
     "copyright": "© 김예람",
     "directories": {
       "output": "dist",
@@ -45,15 +45,15 @@
         }
       ],
       "icon": "build/icon.ico",
-      "artifactName": "YeramCalendar-Setup-${version}.${ext}"
+      "artifactName": "RamCalendar-Setup-${version}.${ext}"
     },
     "nsis": {
       "oneClick": true,
       "perMachine": false,
       "createDesktopShortcut": "always",
       "createStartMenuShortcut": true,
-      "shortcutName": "예람달력",
-      "uninstallDisplayName": "예람달력",
+      "shortcutName": "Ram Calendar",
+      "uninstallDisplayName": "Ram Calendar",
       "installerLanguages": [
         "ko_KR"
       ],
