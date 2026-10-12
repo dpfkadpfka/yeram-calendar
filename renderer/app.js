@@ -232,17 +232,23 @@
       m.appendChild(row);
     };
     section(md(d) + ' 칸 배경', TINTS, (S.cfg.dayColors || {})[d] || '', 'dayColors', '#ffd6e0');
+    section('칸 테두리', BORDERS, (S.cfg.dayBorders || {})[d] || '', 'dayBorders', '#ff5a7a');
     // 날짜 옆 이모지
     m.appendChild(el('div', 'tint-h', '날짜 옆 이모지'));
     const curE = (S.cfg.dayEmojis || {})[d] || '';
     const erow = el('div', 'emorow');
     const enone = el('button', 'def', '없음'); enone.type = 'button'; enone.setAttribute('aria-pressed', String(!curE)); enone.onclick = () => setDayStyle('dayEmojis', d, ''); erow.appendChild(enone);
-    DAY_EMOJIS.forEach(em => { const b = el('button', 'emo', em); b.type = 'button'; b.setAttribute('aria-pressed', String(curE === em)); b.onclick = () => setDayStyle('dayEmojis', d, em); erow.appendChild(b); });
+    // 한 줄(7개)만 보이고 나머지는 … 를 눌러 펼치기
+    const FIRST = 7;
+    DAY_EMOJIS.forEach((em, k) => { const b = el('button', 'emo' + (k >= FIRST ? ' more-emo' : ''), em); b.type = 'button'; b.setAttribute('aria-pressed', String(curE === em)); b.onclick = () => setDayStyle('dayEmojis', d, em); erow.appendChild(b); });
+    const moreB = el('button', 'emo emo-more', '…'); moreB.type = 'button'; moreB.title = '이모지 더 보기';
+    moreB.onclick = () => { erow.classList.toggle('open'); moreB.textContent = erow.classList.contains('open') ? '‹' : '…'; };
+    erow.appendChild(moreB);
+    if (curE && DAY_EMOJIS.indexOf(curE) >= FIRST) { erow.classList.add('open'); moreB.textContent = '‹'; }
     const ein = el('input', 'emoin'); ein.placeholder = '직접(윈도우+.)'; ein.maxLength = 8; ein.value = DAY_EMOJIS.includes(curE) ? '' : curE;
     ein.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); setDayStyle('dayEmojis', d, ein.value.trim()); } });
     ein.addEventListener('change', () => setDayStyle('dayEmojis', d, ein.value.trim()));
     erow.appendChild(ein); m.appendChild(erow);
-    section('칸 테두리', BORDERS, (S.cfg.dayBorders || {})[d] || '', 'dayBorders', '#ff5a7a');
     m.addEventListener('mousedown', (e) => e.stopPropagation());
     month.appendChild(m); tintEl = m;
     let left = c.offsetLeft; left = Math.max(4, Math.min(left, month.clientWidth - m.offsetWidth - 4));

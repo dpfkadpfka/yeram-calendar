@@ -99,11 +99,49 @@
     for (let i = 0; i < im.data.length; i += 4) { const v = r() * 255; im.data[i] = im.data[i + 1] = im.data[i + 2] = v; im.data[i + 3] = 22; }
     x.putImageData(im, 0, 0); ctx.fillStyle = ctx.createPattern(c, 'repeat'); ctx.fillRect(0, 0, w, h);
   }
+  // 유화 느낌의 밤: 소용돌이 흐름을 따라 짧은 붓결을 아주 옅게 겹친다(그림처럼 보이지 않게 낮은 대비)
+  function oilWith(strength) {
+    return function (ctx, w, h) {
+      const r = rng(1890), n = noise2(23), sc = 2.6 / Math.min(w, h);
+      const vort = [[0.62, 0.30, 1.0], [0.30, 0.42, -0.8], [0.82, 0.62, 0.7], [0.18, 0.18, 0.6]].map(([x, y, k]) => [x * w, y * h, k * Math.min(w, h) * 0.28]);
+      const angle = (x, y) => {
+        let a = n(x * sc, y * sc, 3) * Math.PI * 2.2 + 0.4;
+        let vx = Math.cos(a), vy = Math.sin(a);
+        for (const [cx, cy, R] of vort) { const dx = x - cx, dy = y - cy, d2 = dx * dx + dy * dy, f = Math.exp(-d2 / (2 * R * R)) * 2.4 * Math.sign(R); vx += -dy / Math.sqrt(d2 + 1) * f; vy += dx / Math.sqrt(d2 + 1) * f; }
+        return Math.atan2(vy, vx);
+      };
+      const cols = ['#2b4c9b', '#3a63b8', '#1f3a80', '#4f7fcf', '#6f9ee0', '#86b4e6', '#1a2f6a', '#2f6fa8', '#4aa0c8'];
+      const count = Math.floor(w * h / 260 * strength);
+      ctx.lineCap = 'round';
+      for (let i = 0; i < count; i++) {
+        let x = r() * w, y = r() * h;
+        const len = 14 + r() * 22, lw = 3.5 + r() * 5.5;
+        const nearV = vort.some(([cx, cy, R]) => Math.hypot(x - cx, y - cy) < Math.abs(R) * 0.7);
+        ctx.strokeStyle = (nearV && r() < 0.35) ? (r() < 0.5 ? '#c9dcf2' : '#e8d98a') : cols[Math.floor(r() * cols.length)];
+        ctx.globalAlpha = (0.035 + r() * 0.06) * (0.7 + strength * 0.3);
+        ctx.lineWidth = lw; ctx.beginPath(); ctx.moveTo(x, y);
+        for (let k = 0; k < 4; k++) { const a = angle(x, y); x += Math.cos(a) * len / 4; y += Math.sin(a) * len / 4; ctx.lineTo(x, y); }
+        ctx.stroke();
+      }
+      // 별 둘레의 둥근 붓결 빛무리
+      const starsAt = [[0.15, 0.12], [0.44, 0.08], [0.72, 0.16], [0.9, 0.08], [0.58, 0.28], [0.3, 0.24]];
+      for (const [fx, fy] of starsAt) {
+        const cx = fx * w, cy = fy * h, R = Math.min(w, h) * (0.025 + r() * 0.02);
+        glow(ctx, cx, cy, R * 3.2, 'rgba(246,214,110,1)', 0.16 * strength + 0.06);
+        for (let ring = 1; ring <= 3; ring++) for (let q = 0; q < 6; q++) { ctx.globalAlpha = 0.05 * strength; ctx.strokeStyle = ring % 2 ? '#f3dd8a' : '#cfe1f5'; ctx.lineWidth = 4 + r() * 3;
+          const st = r() * 6.28; ctx.beginPath(); ctx.arc(cx, cy, R * (0.7 + ring * 0.6) + r() * 3, st, st + 0.6 + r() * 0.8); ctx.stroke(); }
+        glow(ctx, cx, cy, R * 0.9, 'rgba(255,246,210,1)', 0.7);
+      }
+      // 달
+      glow(ctx, w * 0.9, h * 0.1, Math.min(w, h) * 0.12, 'rgba(250,220,120,1)', 0.22);
+      ctx.globalAlpha = 1;
+    };
+  }
   const both = (a, b) => (ctx, w, h) => { a(ctx, w, h); b(ctx, w, h); };
   const wavesSunset = wavesWith([['#ffd9c2', '#ffc0cf'], ['#ffb199', '#ff9fb8'], ['#ff9478', '#f58bb5'], ['#e9739a', '#b98cf0'], ['#a77fe6', '#7e8cf2']], 'rgba(120,60,90,.18)');
   const wavesNight = wavesWith([['#1c2350', '#2a2163'], ['#2b2f7a', '#4a2c86'], ['#3f3fa8', '#6a35a6'], ['#5b4fd0', '#9b46b8'], ['#7b6cf0', '#c35bc9']], 'rgba(0,0,0,.45)');
   const wavesMint = wavesWith([['#dff7ee', '#d7f0fb'], ['#bdeedd', '#b8e3f7'], ['#93e0c8', '#94d2f2'], ['#64cfb0', '#6db9ec'], ['#3fb79a', '#4f9be0']], 'rgba(20,90,90,.16)');
-  const FX = { stars, galaxy, grain, wavesSunset: both(wavesSunset, grain), wavesNight: both(wavesNight, grain), wavesMint: both(wavesMint, grain), starsGrain: both(stars, grain) };
+  const FX = { stars, galaxy, wavesSunset, wavesNight, wavesMint, starsGrain: stars, grain: () => {}, oilSoft: oilWith(0.6), oilMid: oilWith(1), oilStrong: oilWith(1.6) };
   function draw(name, canvas, cssW, cssH, dpr) {
     const fn = FX[name]; if (!fn) return false;
     dpr = dpr || 1; canvas.width = Math.max(1, Math.round(cssW * dpr)); canvas.height = Math.max(1, Math.round(cssH * dpr));

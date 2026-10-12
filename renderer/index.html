@@ -135,7 +135,6 @@
       <nav class="st-nav" id="stNav">
         <button type="button" data-page="account" aria-selected="true"><span class="st-ic"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c1.4-3.6 4.2-5.2 7.5-5.2s6.1 1.6 7.5 5.2"/></svg></span>계정</button>
         <button type="button" data-page="cals"><span class="st-ic"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></span>캘린더</button>
-        <button type="button" data-page="design"><span class="st-ic"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5a8.5 8.5 0 1 0 0 17c1.2 0 1.8-.9 1.4-1.9-.5-1.2.3-2.4 1.6-2.4h1.6a3.9 3.9 0 0 0 3.9-3.9C20.5 7.3 16.7 3.5 12 3.5z"/><circle cx="7.8" cy="11" r="1"/><circle cx="10.5" cy="7.6" r="1"/><circle cx="15" cy="7.8" r="1"/></svg></span>디자인</button>
         <button type="button" data-page="skin"><span class="st-ic"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><circle cx="9" cy="9.5" r="1.7"/><path d="M20.5 15.5l-5-5-9 9"/></svg></span>스킨</button>
         <button type="button" data-page="font"><span class="st-ic"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19l5-14 5 14M5.8 14.5h6.4"/><path d="M15.5 12.5c.6-.9 1.6-1.4 2.7-1.4 1.6 0 2.8 1 2.8 2.7V19m0-3.2c-.6 1.9-1.9 3.4-3.8 3.4-1.4 0-2.4-.8-2.4-2.1 0-1.6 1.6-2.4 6.2-2.4"/></svg></span>글꼴</button>
         <button type="button" data-page="window"><span class="st-ic"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M3.5 9h17"/><circle cx="6.5" cy="6.8" r=".5" fill="currentColor"/><circle cx="8.6" cy="6.8" r=".5" fill="currentColor"/></svg></span>창·동작</button>
@@ -163,17 +162,6 @@
             <select id="stWeek"><option value="0">일요일</option><option value="1">월요일</option></select>
           </label>
         </section>
-        <section class="st-page" data-page="design" hidden>
-          <h3>디자인</h3>
-          <div class="row wrap">
-            <label class="field sm" id="stThemeRow"><span>밝기</span>
-              <select id="stTheme"><option value="system">윈도우 설정 따름</option><option value="light">밝게</option><option value="dark">어둡게</option></select>
-            </label>
-          </div>
-          <p class="note" id="stThemeNote">스킨을 고르면 스킨이 밝기를 정해요. 스킨을 '기본'으로 두면 여기서 고른 밝기를 따라요.</p>
-          <div class="field"><span>포인트 색 (오늘 표시·버튼)</span><div class="swatches" id="stAccent"></div></div>
-          <div class="field"><span>카드 색 (유리 모양에서는 유리 색)</span><div class="swatches" id="stBg"></div></div>
-        </section>
         <section class="st-page" data-page="skin" hidden>
           <h3>스킨</h3>
           <select id="stStyle" hidden><option value="glass">유리</option><option value="3d">입체</option><option value="flat">평면</option></select>
@@ -184,6 +172,12 @@
           </div>
           <div class="field" id="stGlassRow"><div class="scenes" id="stScene"></div></div>
           <p class="note" id="stSkinNote" hidden></p>
+          <h3 class="st-sub">내 색으로 바꾸기 <small class="muted">고른 스킨 위에 덮어써요</small></h3>
+          <label class="field sm" id="stThemeRow"><span>밝기 <small class="muted">(스킨이 '기본'일 때)</small></span>
+            <select id="stTheme"><option value="system">윈도우 설정 따름</option><option value="light">밝게</option><option value="dark">어둡게</option></select>
+          </label>
+          <div class="field"><span>포인트 색 (오늘 표시·버튼)</span><div class="swatches" id="stAccent"></div></div>
+          <div class="field"><span>카드 색 (유리 모양에서는 유리 색)</span><div class="swatches" id="stBg"></div></div>
         </section>
         <section class="st-page" data-page="font" hidden>
           <h3>글꼴</h3>
