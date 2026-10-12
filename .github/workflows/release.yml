@@ -38,7 +38,7 @@ jobs:
           if ! git ls-remote --exit-code --tags origin "refs/tags/$V" >/dev/null; then
             git tag "$V" && git push origin "$V"
           fi
-          gh release view "$V" >/dev/null 2>&1 || gh release create "$V" --title "$V" --notes "예람달력 $V"
+          gh release view "$V" >/dev/null 2>&1 || gh release create "$V" --title "$V" --notes "Ram Calendar $V"
       - name: 설치 파일 만들고 릴리스에 올리기
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
