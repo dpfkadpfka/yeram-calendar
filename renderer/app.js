@@ -1057,16 +1057,16 @@
       box.textContent = '';
       const head = el('div', 'jump-head');
       const yp = el('button', 'ib', '‹'), yn = el('button', 'ib', '›'); yp.type = yn.type = 'button';
-      yp.onclick = () => { year--; draw(); }; yn.onclick = () => { year++; draw(); };
+      yp.onclick = () => { year--; shown = year + shown.slice(4); draw(); }; yn.onclick = () => { year++; shown = year + shown.slice(4); draw(); };
       head.append(yp, el('b', null, year + '년'), yn); box.appendChild(head);
       const months = el('div', 'jump-months');
       for (let m = 1; m <= 12; m++) {
         const key = year + '-' + pad(m), b = el('button', 'jm', m + '월'); b.type = 'button';
-        if (key === S.ym) b.classList.add('cur');
+        if (key === shown) b.classList.add('cur');
+        if (key === S.ym) b.classList.add('viewing');
         if (key === todayStr().slice(0, 7)) b.classList.add('now');
-        if (key === shown) b.setAttribute('aria-pressed', 'true');
-        b.onclick = () => { closeJump(); if (key !== S.ym) { S.ym = key; S.sel = key === todayStr().slice(0, 7) ? todayStr() : key + '-01'; S.events = []; render(); load(); } };
-        b.onmouseenter = () => { if (shown !== key) { shown = key; drawMini(); } };
+        // 달을 누르면 아래 작은 달력만 그 달로 바뀌고, 날짜를 눌러야 큰 달력이 이동
+        b.onclick = () => { shown = key; draw(); };
         months.appendChild(b);
       }
       box.appendChild(months);

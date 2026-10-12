@@ -476,3 +476,4 @@ body.settings-mode #stClose{display:none}
 .jmini-g .jd.sel{background:var(--accent)!important;color:#fff}
 .jump-foot{display:flex;justify-content:flex-end}
 .jump-foot button{font-size:12px;padding:3px 10px}
+.jump-months .jm.viewing:not(.cur){box-shadow:inset 0 -2px 0 var(--accent)!important}
