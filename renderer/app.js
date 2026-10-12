@@ -105,6 +105,7 @@
         (dow_ === 0 ? ' sun' : dow_ === 6 ? ' sat' : '') + (hol ? ' hol' : ''));
       c.dataset.d = d;
       const tint = (S.cfg.dayColors || {})[d]; if (tint) { c.classList.add('tinted'); c.style.setProperty('--tint', tint); }
+      const bord = (S.cfg.dayBorders || {})[d]; if (bord) { c.classList.add('bordered'); c.style.setProperty('--bord', bord); }
       const head = el('div', 'chead'); head.appendChild(el('span', 'num', String(+d.slice(8))));
       if (hol) head.appendChild(el('span', 'hname', hol.title));
       c.appendChild(head);
@@ -213,27 +214,35 @@
   const TINTS = ['#ffd6e0', '#ffe3c2', '#fff1a8', '#d7f5c8', '#c9ecf7', '#d5dcff', '#e8d5ff', '#e2e5ea', '#ff9aa8', '#7fd1ae'];
   let tintEl = null;
   function closeTint() { if (tintEl) { tintEl.remove(); tintEl = null; } }
+  const BORDERS = ['#ff5a7a', '#ff9a3c', '#f2c200', '#34b36b', '#20a4d8', '#4f6bed', '#9b5de5', '#6b7280', '#1d2330', '#ffffff'];
   function openTint(c) {
     hidePeek(); closeTint();
-    const d = c.dataset.d, month = $('month'), cur = (S.cfg.dayColors || {})[d] || '';
+    const d = c.dataset.d, month = $('month');
     const m = el('div', 'tintmenu');
-    m.appendChild(el('div', 'tint-h', md(d) + ' 칸 색'));
-    const row = el('div', 'swatches');
-    const none = el('button', 'def', '없음'); none.type = 'button'; none.setAttribute('aria-pressed', String(!cur)); row.appendChild(none);
-    none.onclick = () => setTint(d, '');
-    TINTS.forEach(col => { const b = el('button'); b.type = 'button'; b.style.setProperty('--sw', col); b.setAttribute('aria-pressed', String(cur === col)); b.onclick = () => setTint(d, col); row.appendChild(b); });
-    const pick = el('input', 'colorpick'); pick.type = 'color'; pick.value = cur || '#ffd6e0'; pick.title = '직접 고르기';
-    pick.addEventListener('change', () => setTint(d, pick.value)); row.appendChild(pick);
-    m.appendChild(row);
+    const section = (title, list, cur, key, defPick) => {
+      m.appendChild(el('div', 'tint-h', title));
+      const row = el('div', 'swatches' + (key === 'dayBorders' ? ' borders' : ''));
+      const none = el('button', 'def', '없음'); none.type = 'button'; none.setAttribute('aria-pressed', String(!cur)); row.appendChild(none);
+      none.onclick = () => setDayStyle(key, d, '');
+      list.forEach(col => { const b = el('button'); b.type = 'button'; b.style.setProperty('--sw', col); b.setAttribute('aria-pressed', String(cur === col)); b.onclick = () => setDayStyle(key, d, col); row.appendChild(b); });
+      const pick = el('input', 'colorpick'); pick.type = 'color'; pick.value = cur || defPick; pick.title = '직접 고르기';
+      pick.addEventListener('change', () => setDayStyle(key, d, pick.value)); row.appendChild(pick);
+      m.appendChild(row);
+    };
+    section(md(d) + ' 칸 배경', TINTS, (S.cfg.dayColors || {})[d] || '', 'dayColors', '#ffd6e0');
+    section('칸 테두리', BORDERS, (S.cfg.dayBorders || {})[d] || '', 'dayBorders', '#ff5a7a');
     m.addEventListener('mousedown', (e) => e.stopPropagation());
     month.appendChild(m); tintEl = m;
     let left = c.offsetLeft; left = Math.max(4, Math.min(left, month.clientWidth - m.offsetWidth - 4));
     let top = c.offsetTop + 24; if (top + m.offsetHeight > month.clientHeight - 4) top = Math.max(4, c.offsetTop - m.offsetHeight + 6);
     m.style.left = left + 'px'; m.style.top = top + 'px';
   }
-  async function setTint(d, col) {
-    const dc = Object.assign({}, S.cfg.dayColors || {}); if (col) dc[d] = col; else delete dc[d];
-    await setCfg({ dayColors: dc }); closeTint(); render();
+  // 고르는 즉시 칸에 반영하고, 메뉴는 열어 둬서 배경·테두리를 이어서 바꿀 수 있게
+  async function setDayStyle(key, d, col) {
+    const dc = Object.assign({}, S.cfg[key] || {}); if (col) dc[d] = col; else delete dc[d];
+    S.cfg[key] = dc; render();
+    const c = document.querySelector('.cell[data-d="' + d + '"]'); if (c) openTint(c); else closeTint();
+    await setCfg({ [key]: dc });
   }
   document.addEventListener('mousedown', () => closeTint());
 
@@ -250,6 +259,45 @@
     api.setCfg({ panelMode: mode, panelOpen: S.cfg.panelOpen });
     applyPanel(); renderPanel();
     if (mode === 'search') setTimeout(() => $('searchInput').focus(), 0);
+  }
+  // ---------- 하단 메모(포스트잇) ----------
+  const NOTE_COLORS = ['#fff1a1', '#ffd3df', '#d6f5c6', '#cfe7ff', '#e6d8ff', '#ffdfba'];
+  let noteTimer = null;
+  const notesOf = () => Array.isArray(S.cfg.notes) ? S.cfg.notes : [];
+  function saveNotes(list, now) {
+    S.cfg.notes = list; $('noteCount').textContent = list.length ? list.length : '';
+    clearTimeout(noteTimer); const go = () => api.setCfg({ notes: list });
+    if (now) go(); else noteTimer = setTimeout(go, 500);
+  }
+  function applyFoot() {
+    const open = S.cfg.footOpen !== false;
+    $('foot').classList.toggle('closed', !open); $('footOpen').hidden = open;
+    $('noteCount').textContent = notesOf().length || '';
+    if (open) renderNotes();
+  }
+  function renderNotes() {
+    const box = $('notes'); box.textContent = '';
+    notesOf().forEach((n, i) => {
+      const card = el('div', 'note'); card.style.setProperty('--nc', n.color || NOTE_COLORS[0]);
+      card.style.setProperty('--rot', ((i * 37) % 5 - 2) * 0.6 + 'deg');
+      const ta = el('textarea'); ta.value = n.text || ''; ta.placeholder = '메모'; ta.spellcheck = false;
+      ta.addEventListener('input', () => { const list = notesOf().slice(); list[i] = Object.assign({}, list[i], { text: ta.value }); saveNotes(list); });
+      const tools = el('div', 'note-tools');
+      NOTE_COLORS.forEach(col => { const b = el('button', 'nc'); b.type = 'button'; b.style.setProperty('--sw', col); b.title = '색 바꾸기';
+        b.onclick = () => { const list = notesOf().slice(); list[i] = Object.assign({}, list[i], { color: col }); saveNotes(list, true); renderNotes(); }; tools.appendChild(b); });
+      const del = el('button', 'nd', '×'); del.type = 'button'; del.title = '메모 삭제';
+      del.onclick = () => { const list = notesOf().slice(); list.splice(i, 1); saveNotes(list, true); renderNotes(); };
+      tools.appendChild(del);
+      card.append(ta, tools); box.appendChild(card);
+    });
+    const add = el('button', 'note-add', '+ 메모'); add.type = 'button';
+    add.onclick = () => {
+      const list = notesOf().concat([{ id: Date.now().toString(36), text: '', color: NOTE_COLORS[notesOf().length % NOTE_COLORS.length] }]);
+      saveNotes(list, true); renderNotes();
+      const tas = box.querySelectorAll('textarea'); const last = tas[tas.length - 1]; if (last) last.focus();
+      box.scrollLeft = box.scrollWidth;
+    };
+    box.appendChild(add);
   }
   function applyPanel() {
     $('panel').hidden = !S.cfg.panelOpen;
@@ -865,6 +913,8 @@
     $('stFont').onchange = () => setDraft({ fontFamily: $('stFont').value });
     $('stStyle').onchange = () => { setDraft({ style: $('stStyle').value }); renderLook(); };
     $('tbOpacity').addEventListener('input', () => { const v = +$('tbOpacity').value; $('stOpacity').value = v; $('stOpVal').textContent = v + '%'; setCfg({ opacity: v / 100 }); });
+    $('footClose').onclick = () => { S.cfg.footOpen = false; api.setCfg({ footOpen: false }); applyFoot(); };
+    $('footOpen').onclick = () => { S.cfg.footOpen = true; api.setCfg({ footOpen: true }); applyFoot(); };
     $('panelHandle').onclick = () => { S.cfg.panelOpen = !S.cfg.panelOpen; api.setCfg({ panelOpen: S.cfg.panelOpen }); applyPanel(); };
     $('stFontSize').addEventListener('input', () => { $('stFsVal').textContent = $('stFontSize').value; setDraft({ fontSize: +$('stFontSize').value }); });
     $('stTop').onchange = () => setDraft({ alwaysOnTop: $('stTop').checked });
@@ -918,7 +968,7 @@
   async function init() {
     if (SET_MODE) return initSettingsWindow();
     const r = await api.getCfg(); S.cfg = r.ok ? r.data : {};
-    themeApply(); lockApply(); applyPanel(); bind(); applyMini(); render();
+    themeApply(); lockApply(); applyPanel(); applyFoot(); bind(); applyMini(); render();
     $('tbOpacity').value = Math.round((S.cfg.opacity || 1) * 100);
     await load({ cals: true }); startTimer();
   }
