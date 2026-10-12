@@ -122,7 +122,7 @@
 <dialog id="settings">
   <form method="dialog" class="dlg" id="stForm">
     <div class="dlg-head">
-      <h2>설정</h2>
+      <h2>설정 <span class="muted drag-hint">· 제목을 잡고 옮길 수 있어요</span></h2>
       <button type="button" class="ib" id="stClose" aria-label="닫기">✕</button>
     </div>
     <h3>구글 계정</h3>
@@ -168,7 +168,8 @@
       <button type="button" class="danger" id="stQuit">앱 종료</button>
       <span class="muted" id="stVer"></span>
       <span class="grow"></span>
-      <button type="submit" class="primary">닫기</button>
+      <button type="button" id="stCancel">취소</button>
+      <button type="submit" class="primary">저장</button>
     </div>
   </form>
 </dialog>

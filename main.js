@@ -216,6 +216,7 @@ ipcMain.handle('ev:delete', wrap(async (calId, id) => api('DELETE', `/calendars/
 ipcMain.handle('win:action', wrap(async (act, arg) => {
   if (!win) return;
   if (act === 'minimize') win.minimize();
+  if (act === 'opacity') win.setOpacity(Math.min(1, Math.max(0.3, Number(arg) || 1)));
   if (act === 'mini') {
     const on = !!arg; if (on === !!cfg.mini) return;
     const cur = win.getBounds();

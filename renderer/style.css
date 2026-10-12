@@ -346,3 +346,17 @@ input[type="range"]{padding:0}
 .adv summary{cursor:pointer;font-size:12.5px;color:var(--muted)}
 .adv[open]{display:flex;flex-direction:column;gap:8px}
 .adv[open] summary{margin-bottom:2px}
+
+/* 좁은 칸: 이모지만 남기지 않고 더 작은 글씨로 제목을 유지 */
+.cell.tiny .chips{gap:1px}
+.cell.tiny .chip{height:12px;line-height:12px;font-size:9.5px;padding:0 2px;border-left-width:2px;border-radius:2px}
+:root[data-style] .cell.tiny .chip{line-height:10px}
+.cell.tiny .chip .tm{display:none}
+
+/* 설정창: 뒤를 흐리게 하지 않고, 끌어서 옮기는 창 */
+#settings{position:fixed;inset:auto;margin:0;z-index:50;max-height:calc(100vh - 60px);box-shadow:0 18px 48px rgba(0,0,0,.28)}
+#settings .dlg-head{cursor:move;user-select:none}
+#settings .drag-hint{font-size:11px;font-weight:400}
+#settings .dlg{padding-top:0}
+#settings .dlg-head{position:sticky;top:0;z-index:2;padding:12px 0 8px;background:var(--surface)}
+:root[data-style="glass"] #settings .dlg-head{background:var(--glass2);backdrop-filter:blur(20px)}

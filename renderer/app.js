@@ -43,9 +43,11 @@
     loading: false, lastSync: null, searchResults: null, timer: null, lastFocusLoad: 0, dragKey: null
   };
 
-  function visibleCalIds() { const hidden = new Set(S.cfg.hiddenCalendars || []); return S.cals.filter(c => !hidden.has(c.id)).map(c => c.id); }
+  // 설정창에서 고르는 중인 값(미리보기)을 저장된 값 위에 얹어서 본다
+  const V = () => (S.draft ? Object.assign({}, S.cfg, S.draft) : S.cfg);
+  function visibleCalIds() { const hidden = new Set(V().hiddenCalendars || []); return S.cals.filter(c => !hidden.has(c.id)).map(c => c.id); }
   function gridStart(ym) {
-    const first = parse(ym + '-01'); const ws = +S.cfg.weekStart || 0;
+    const first = parse(ym + '-01'); const ws = +V().weekStart || 0;
     const off = (first.getDay() - ws + 7) % 7; first.setDate(first.getDate() - off); return ymd(first);
   }
 
@@ -87,7 +89,7 @@
   function render() {
     const today = todayStr();
     $('monthTitle').textContent = S.ym.slice(0, 4) + '년 ' + (+S.ym.slice(5)) + '월';
-    const ws = +S.cfg.weekStart || 0;
+    const ws = +V().weekStart || 0;
     const dow = $('dow'); dow.textContent = '';
     for (let i = 0; i < 7; i++) { const k = (i + ws) % 7; dow.appendChild(el('div', k === 0 ? 'sun' : k === 6 ? 'sat' : '', WD[k])); }
 
@@ -150,14 +152,14 @@
     document.querySelectorAll('.cell').forEach(c => {
       const box = c.querySelector('.chips'); if (!box) return;
       const old = box.querySelector('.more'); if (old) old.remove();
-      c.classList.remove('dense', 'icons');
+      c.classList.remove('dense', 'tiny', 'icons');
       const chips = Array.from(box.querySelectorAll('.chip'));
       chips.forEach(ch => ch.hidden = false);
       if (!chips.length) return;
       const fits = () => box.scrollHeight <= box.clientHeight + 1;
       if (fits()) return;
       c.classList.add('dense'); if (fits()) return;
-      c.classList.remove('dense'); c.classList.add('icons'); if (fits()) return;
+      c.classList.remove('dense'); c.classList.add('tiny'); if (fits()) return;
       const m = el('div', 'more');
       m.addEventListener('click', (e) => { e.stopPropagation(); select(c.dataset.d, false); setPanel('day', true); });
       box.appendChild(m);
@@ -319,7 +321,7 @@
       const add = el('button', 'padd', '＋ 이 날 일정 추가'); add.type = 'button';
       add.addEventListener('click', () => openEditor(null, S.sel)); box.appendChild(add);
     } else if (mode === 'week') {
-      const ws = +S.cfg.weekStart || 0; const sd = parse(S.sel);
+      const ws = +V().weekStart || 0; const sd = parse(S.sel);
       const off = (sd.getDay() - ws + 7) % 7; const w0 = addDays(S.sel, -off);
       for (let i = 0; i < 7; i++) {
         const d = addDays(w0, i); box.appendChild(dayHeader(d));
@@ -542,8 +544,11 @@
   }
 
   // ---------- 설정창 ----------
+  function sceneIsDark(c) { const sc = SCENES[c.scene || 'pastel']; return (c.style || 'glass') === 'glass' && !!(sc && sc.dark); }
   function themeApply() {
-    const t = S.cfg.theme; if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
+    const c = V();
+    const t = sceneIsDark(c) ? 'dark' : c.theme;
+    if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
     lookApply();
   }
   // ---------- 글꼴·색 ----------
@@ -554,7 +559,7 @@
   const lum = (h) => { const [r, g, b] = rgb(h).map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
   const mix = (a, b, t) => { const x = rgb(a), y = rgb(b); return '#' + x.map((v, i) => Math.round(v + (y[i] - v) * t).toString(16).padStart(2, '0')).join(''); };
   function lookApply() {
-    const s = document.documentElement.style, c = S.cfg;
+    const s = document.documentElement.style, c = V();
     if (c.fontFamily) s.setProperty('--font', '"' + c.fontFamily.replace(/"/g, '') + '","Malgun Gothic","Segoe UI",sans-serif'); else s.removeProperty('--font');
     document.body.style.zoom = String((c.fontSize || 13) / 13);
     document.documentElement.dataset.style = c.style || 'glass';
@@ -575,7 +580,7 @@
     } else document.documentElement.style.colorScheme = '';
     // 유리 디자인: 뒤 배경(빛 번짐) 장면 + 유리 색
     const isDark = /^#[0-9a-f]{6}$/i.test(c.bgColor || '') ? lum(c.bgColor) < 0.25
-      : (c.theme === 'dark' || (c.theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches));
+      : (sceneIsDark(c) || c.theme === 'dark' || (c.theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches));
     const sc = SCENES[c.scene || 'pastel'] || SCENES.pastel;
     let base = sc.base; if (isDark && !sc.dark) base = mix(base, '#0d1017', 0.88);
     s.setProperty('--b0', base);
@@ -593,8 +598,14 @@
     forest: { name: '숲', base: '#edf5ec', blobs: ['#58c48a', '#a6d96a', '#2fa38f', '#e8d36b'] },
     lavender: { name: '라벤더', base: '#f2eefb', blobs: ['#a78bfa', '#f0abfc', '#818cf8', '#c4b5fd'] },
     peach: { name: '복숭아', base: '#fdf1ea', blobs: ['#ffb38a', '#ffd6a5', '#ff8fab', '#fdffb6'] },
-    night: { name: '밤하늘', base: '#151a2b', dark: true, blobs: ['#4c51bf', '#7f5af0', '#2cb1bc', '#ff6f91'] },
-    plain: { name: '단색', base: '#eef0f4', blobs: [null, null, null, null] }
+    plain: { name: '단색', base: '#eef0f4', blobs: [null, null, null, null] },
+    night: { name: '밤하늘', base: '#121729', dark: true, blobs: ['#4c51bf', '#7f5af0', '#2cb1bc', '#ff6f91'] },
+    deepsea: { name: '심해', base: '#0a1622', dark: true, blobs: ['#0e7490', '#1d4ed8', '#14b8a6', '#0369a1'] },
+    aurora: { name: '오로라', base: '#0d1418', dark: true, blobs: ['#22c55e', '#a855f7', '#06b6d4', '#16a34a'] },
+    dusk: { name: '노을밤', base: '#1a1220', dark: true, blobs: ['#f97316', '#db2777', '#7c3aed', '#f59e0b'] },
+    galaxy: { name: '은하수', base: '#100c1c', dark: true, blobs: ['#c026d3', '#4f46e5', '#ec4899', '#38bdf8'] },
+    nightforest: { name: '밤숲', base: '#0e1712', dark: true, blobs: ['#15803d', '#65a30d', '#0f766e', '#ca8a04'] },
+    black: { name: '블랙', base: '#0b0c10', dark: true, blobs: [null, null, null, null] }
   };
   let fontList = null;
   async function loadFonts() {
@@ -608,7 +619,7 @@
     return fontList;
   }
   async function renderLook() {
-    const c = S.cfg, fsel = $('stFont');
+    const c = V(), fsel = $('stFont');
     const fl = await loadFonts();
     fsel.textContent = '';
     const add = (parent, v, label) => { const o = el('option', null, label || v); o.value = v; if (v) o.style.fontFamily = '"' + v + '"'; parent.appendChild(o); };
@@ -619,14 +630,14 @@
     fsel.value = c.fontFamily || '';
     $('stStyle').value = c.style || 'glass';
     $('stFontSize').value = c.fontSize || 13; $('stFsVal').textContent = $('stFontSize').value;
-    swatchRow($('stAccent'), ACCENTS, c.accent, '기본', (v) => setCfg({ accent: v }));
-    swatchRow($('stBg'), BGS, c.bgColor, '테마 기본', (v) => setCfg({ bgColor: v }));
+    swatchRow($('stAccent'), ACCENTS, c.accent, '기본', (v) => setDraft({ accent: v }));
+    swatchRow($('stBg'), BGS, c.bgColor, '테마 기본', (v) => setDraft({ bgColor: v }));
     const sb = $('stScene'); sb.textContent = '';
     Object.entries(SCENES).forEach(([k, v]) => {
       const b = el('button', 'scene', v.name); b.type = 'button'; b.setAttribute('aria-pressed', String((c.scene || 'pastel') === k));
       b.style.background = 'radial-gradient(60% 80% at 20% 30%,' + (v.blobs[0] || v.base) + ',transparent),radial-gradient(60% 80% at 80% 70%,' + (v.blobs[1] || v.base) + ',transparent),' + v.base;
       if (v.dark) b.style.color = '#fff';
-      b.onclick = async () => { await setCfg({ scene: k }); renderLook(); };
+      b.onclick = () => { setDraft({ scene: k }); renderLook(); };
       sb.appendChild(b);
     });
     $('stSee').checked = c.glassSeeThrough !== false; $('stSeeWrap').hidden = !c.acrylic;
@@ -645,7 +656,7 @@
   }
   function lockApply() { $('lockBtn').classList.toggle('on', !!S.cfg.locked); $('titlebar').classList.toggle('drag', !S.cfg.locked); }
   function renderSettings() {
-    const c = S.cfg;
+    const c = V();
     $('stClientId').value = c.clientId || '';
     $('stAdv').open = !c.builtIn && !c.loggedIn;
     $('stVer').textContent = c.version ? 'v' + c.version : '';
@@ -663,12 +674,35 @@
     S.cals.forEach(cal => {
       const l = el('label'); const cb = el('input'); cb.type = 'checkbox'; cb.checked = !hidden.has(cal.id);
       cb.addEventListener('change', async () => {
-        const h = new Set(S.cfg.hiddenCalendars || []); cb.checked ? h.delete(cal.id) : h.add(cal.id);
-        await setCfg({ hiddenCalendars: Array.from(h) }); load();
+        const h = new Set(V().hiddenCalendars || []); cb.checked ? h.delete(cal.id) : h.add(cal.id);
+        setDraft({ hiddenCalendars: Array.from(h) }); load();
       });
       const sq = el('span', 'sq'); sq.style.setProperty('--sw', cal.color || '#999');
       l.append(cb, sq, document.createTextNode(cal.name)); box.appendChild(l);
     });
+  }
+  // ---------- 설정 미리보기 → 저장/취소 ----------
+  function setDraft(patch) {
+    if (!S.draft) S.draft = {};
+    Object.assign(S.draft, patch);
+    if ('opacity' in patch) api.win('opacity', patch.opacity);
+    themeApply();
+    if ('weekStart' in patch) render();
+  }
+  async function saveSettings() {
+    const d = S.draft || {}; S.draft = null;
+    await saveCreds();
+    if (Object.keys(d).length) await setCfg(d);
+    $('settings').close();
+    if ('weekStart' in d || 'hiddenCalendars' in d) load(); else render();
+  }
+  function cancelSettings() {
+    const had = S.draft && Object.keys(S.draft).length; const d = S.draft || {};
+    S.draft = null;
+    if ('opacity' in d) api.win('opacity', S.cfg.opacity || 1);
+    themeApply();
+    if ($('settings').open) $('settings').close();
+    if (had && ('weekStart' in d || 'hiddenCalendars' in d)) load(); else if (had) render();
   }
   async function setCfg(patch) { const r = await api.setCfg(patch); if (r.ok) { S.cfg = r.data; themeApply(); lockApply(); } return r; }
   async function saveCreds() {
@@ -701,8 +735,23 @@
     $('edDelete').onclick = deleteEditor;
     $('edOpen').onclick = () => { if (ED.ev && ED.ev.link) api.win('open', ED.ev.link); };
 
-    $('stClose').onclick = () => $('settings').close();
-    $('settings').addEventListener('close', async () => { await saveCreds(); });
+    $('stClose').onclick = cancelSettings;
+    $('stCancel').onclick = cancelSettings;
+    $('stForm').addEventListener('submit', (e) => { e.preventDefault(); saveSettings(); });
+    $('settings').addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.preventDefault(); cancelSettings(); } });
+    // 설정창 제목을 잡고 끌어서 옮기기
+    (function () {
+      const dlg = $('settings'), head = dlg.querySelector('.dlg-head'); let sx, sy, ox, oy, dragging = false;
+      head.addEventListener('mousedown', (e) => { if (e.target.closest('button')) return; dragging = true; const r = dlg.getBoundingClientRect(); sx = e.clientX; sy = e.clientY; ox = r.left; oy = r.top; e.preventDefault(); });
+      window.addEventListener('mousemove', (e) => {
+        if (!dragging) return;
+        const z = parseFloat(document.body.style.zoom || '1') || 1;
+        let nx = ox + (e.clientX - sx), ny = oy + (e.clientY - sy);
+        nx = Math.max(-dlg.offsetWidth * z + 80, Math.min(nx, window.innerWidth - 80)); ny = Math.max(0, Math.min(ny, window.innerHeight - 40));
+        dlg.style.left = (nx / z) + 'px'; dlg.style.top = (ny / z) + 'px';
+      });
+      window.addEventListener('mouseup', () => { dragging = false; });
+    })();
     $('stClientId').addEventListener('change', saveCreds); $('stSecret').addEventListener('change', saveCreds);
     $('stLogin').onclick = async () => {
       await saveCreds();
@@ -713,19 +762,19 @@
       S.cfg = r.data; S.cals = []; renderSettings(); await load({ cals: true }); renderSettings();
     };
     $('stLogout').onclick = async () => { const r = await api.logout(); if (r.ok) { S.cfg = r.data; S.cals = []; S.events = []; renderSettings(); load(); } };
-    $('stOpacity').addEventListener('input', () => { $('stOpVal').textContent = $('stOpacity').value + '%'; $('tbOpacity').value = $('stOpacity').value; setCfg({ opacity: +$('stOpacity').value / 100 }); });
-    $('stTheme').onchange = () => setCfg({ theme: $('stTheme').value });
-    $('stWeek').onchange = async () => { await setCfg({ weekStart: +$('stWeek').value }); load(); };
-    $('stFont').onchange = () => setCfg({ fontFamily: $('stFont').value });
-    $('stStyle').onchange = async () => { await setCfg({ style: $('stStyle').value }); renderLook(); };
-    $('stSee').onchange = () => setCfg({ glassSeeThrough: $('stSee').checked });
+    $('stOpacity').addEventListener('input', () => { $('stOpVal').textContent = $('stOpacity').value + '%'; $('tbOpacity').value = $('stOpacity').value; setDraft({ opacity: +$('stOpacity').value / 100 }); });
+    $('stTheme').onchange = () => setDraft({ theme: $('stTheme').value });
+    $('stWeek').onchange = () => setDraft({ weekStart: +$('stWeek').value });
+    $('stFont').onchange = () => setDraft({ fontFamily: $('stFont').value });
+    $('stStyle').onchange = () => { setDraft({ style: $('stStyle').value }); renderLook(); };
+    $('stSee').onchange = () => setDraft({ glassSeeThrough: $('stSee').checked });
     $('tbOpacity').addEventListener('input', () => { const v = +$('tbOpacity').value; $('stOpacity').value = v; $('stOpVal').textContent = v + '%'; setCfg({ opacity: v / 100 }); });
     $('panelHandle').onclick = () => { S.cfg.panelOpen = !S.cfg.panelOpen; api.setCfg({ panelOpen: S.cfg.panelOpen }); applyPanel(); };
-    $('stFontSize').addEventListener('input', () => { $('stFsVal').textContent = $('stFontSize').value; setCfg({ fontSize: +$('stFontSize').value }); });
-    $('stTop').onchange = () => setCfg({ alwaysOnTop: $('stTop').checked });
-    $('stPeek').onchange = () => setCfg({ hoverZoom: $('stPeek').checked });
-    $('stLock').onchange = () => setCfg({ locked: $('stLock').checked });
-    $('stAuto').onchange = () => setCfg({ autoStart: $('stAuto').checked });
+    $('stFontSize').addEventListener('input', () => { $('stFsVal').textContent = $('stFontSize').value; setDraft({ fontSize: +$('stFontSize').value }); });
+    $('stTop').onchange = () => setDraft({ alwaysOnTop: $('stTop').checked });
+    $('stPeek').onchange = () => setDraft({ hoverZoom: $('stPeek').checked });
+    $('stLock').onchange = () => setDraft({ locked: $('stLock').checked });
+    $('stAuto').onchange = () => setDraft({ autoStart: $('stAuto').checked });
     $('stQuit').onclick = () => api.win('quit');
 
     document.addEventListener('keydown', (e) => {
@@ -743,7 +792,12 @@
     let lastDay = todayStr();
     setInterval(() => { if (todayStr() !== lastDay) { lastDay = todayStr(); applyMini(); if (S.cfg.mini) { S.sel = lastDay; S.ym = lastDay.slice(0, 7); load(); } else render(); } }, 60 * 1000);
   }
-  function openSettings() { renderSettings(); $('settings').showModal(); }
+  function openSettings() {
+    const dlg = $('settings');
+    if (dlg.open) return;
+    S.draft = {}; renderSettings(); dlg.show();
+    if (!dlg.style.left) { const z = parseFloat(document.body.style.zoom || '1') || 1; dlg.style.left = Math.max(8, (window.innerWidth / z - dlg.offsetWidth) / 2) + 'px'; dlg.style.top = '48px'; }
+  }
   function shiftMonth(n) {
     const y = +S.ym.slice(0, 4), m = +S.ym.slice(5) - 1 + n;
     const d = new Date(y, m, 1); S.ym = ymd(d).slice(0, 7);
