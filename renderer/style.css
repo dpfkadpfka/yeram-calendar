@@ -378,3 +378,10 @@ body.settings-mode #stClose{display:none}
 :root[data-art="1"][data-style="glass"] .cell{backdrop-filter:blur(5px) saturate(130%)}
 :root[data-art="1"][data-style="glass"] .titlebar,:root[data-art="1"][data-style="glass"] .panel{backdrop-filter:blur(12px) saturate(140%)}
 .scenes .scene.art{text-shadow:0 1px 3px rgba(0,0,0,.65);color:#fff!important;width:84px}
+
+/* 테마 고르기 버튼: 배경 색 견본 + 포인트 색 점 */
+.scenes .scene{position:relative;width:86px;height:46px;font-size:11.5px;font-weight:700;color:#1d2330!important;text-shadow:0 1px 0 rgba(255,255,255,.6)}
+.scenes .scene.dk{color:#fff!important;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.scenes .scene::after{content:"";position:absolute;right:5px;bottom:5px;width:10px;height:10px;border-radius:3px;background:var(--dot,transparent);box-shadow:0 0 0 1.5px rgba(255,255,255,.8)}
+.scenes .scene-break{flex-basis:100%;height:0}
+:root[data-art="1"] body{background-color:transparent}
