@@ -238,7 +238,7 @@ input[type="range"]{padding:0}
 
 /* ===== 유리(글래스모피즘) 디자인 =====
    윈도우 11: 창 뒤 바탕화면이 흐리게 비침(아크릴). 그 외: 파스텔 빛 번짐 배경 위에 젖빛 유리 카드. */
-:root[data-style="glass"]{--glass:rgba(255,255,255,.42);--glass2:rgba(255,255,255,.62);--gline:rgba(255,255,255,.7);--gsh:rgba(40,50,110,.14)}
+:root[data-style="glass"]{--glass:rgba(255,255,255,.34);--glass2:rgba(255,255,255,.62);--gline:rgba(255,255,255,.7);--gsh:rgba(40,50,110,.14)}
 @media (prefers-color-scheme: dark){:root[data-style="glass"]:not([data-theme="light"]){--glass:rgba(28,32,46,.45);--glass2:rgba(36,42,60,.7);--gline:rgba(255,255,255,.14);--gsh:rgba(0,0,0,.4)}}
 :root[data-style="glass"][data-theme="dark"]{--glass:rgba(28,32,46,.45);--glass2:rgba(36,42,60,.7);--gline:rgba(255,255,255,.14);--gsh:rgba(0,0,0,.4)}
 :root[data-style="glass"] body{background:
@@ -360,3 +360,13 @@ input[type="range"]{padding:0}
 #settings .dlg{padding-top:0}
 #settings .dlg-head{position:sticky;top:0;z-index:2;padding:12px 0 8px;background:var(--surface)}
 :root[data-style="glass"] #settings .dlg-head{background:var(--glass2);backdrop-filter:blur(20px)}
+
+.scenes .scene.desk{background:repeating-linear-gradient(45deg,var(--surface2) 0 6px,var(--surface) 6px 12px)!important;color:var(--fg)!important}
+
+/* 별도 설정 창 */
+body.settings-mode{overflow:auto}
+body.settings-mode #app{display:none}
+body.settings-mode #settings{position:static;width:100%;max-width:none;max-height:none;min-height:100vh;border:0;border-radius:0;box-shadow:none;margin:0}
+body.settings-mode #settings .dlg-head{cursor:default}
+body.settings-mode #settings .drag-hint{display:none}
+body.settings-mode #stClose{display:none}

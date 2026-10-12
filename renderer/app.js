@@ -544,7 +544,7 @@
   }
 
   // ---------- 설정창 ----------
-  function sceneIsDark(c) { const sc = SCENES[c.scene || 'pastel']; return (c.style || 'glass') === 'glass' && !!(sc && sc.dark); }
+  function sceneIsDark(c) { const sc = SCENES[c.scene]; return (c.style || 'glass') === 'glass' && !!(sc && sc.dark); }
   function themeApply() {
     const c = V();
     const t = sceneIsDark(c) ? 'dark' : c.theme;
@@ -563,7 +563,8 @@
     if (c.fontFamily) s.setProperty('--font', '"' + c.fontFamily.replace(/"/g, '') + '","Malgun Gothic","Segoe UI",sans-serif'); else s.removeProperty('--font');
     document.body.style.zoom = String((c.fontSize || 13) / 13);
     document.documentElement.dataset.style = c.style || 'glass';
-    if (c.acrylic && c.glassSeeThrough !== false) document.documentElement.dataset.acrylic = '1'; else delete document.documentElement.dataset.acrylic;
+    const see = c.acrylic && (c.style || 'glass') === 'glass' && c.scene === 'desktop';
+    if (see) document.documentElement.dataset.acrylic = '1'; else delete document.documentElement.dataset.acrylic;
     ['--glass', '--glass2', '--gline', '--b0', '--b1', '--b2', '--b3', '--b4', '--accent', '--accent-soft', '--sat', '--surface', '--bg', '--surface2', '--fg', '--muted', '--line'].forEach(k => s.removeProperty(k));
     if (/^#[0-9a-f]{6}$/i.test(c.accent || '')) {
       s.setProperty('--accent', c.accent); s.setProperty('--sat', c.accent);
@@ -581,10 +582,10 @@
     // 유리 디자인: 뒤 배경(빛 번짐) 장면 + 유리 색
     const isDark = /^#[0-9a-f]{6}$/i.test(c.bgColor || '') ? lum(c.bgColor) < 0.25
       : (sceneIsDark(c) || c.theme === 'dark' || (c.theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches));
-    const sc = SCENES[c.scene || 'pastel'] || SCENES.pastel;
+    const sc = SCENES[c.scene] || SCENES.pastel;
     let base = sc.base; if (isDark && !sc.dark) base = mix(base, '#0d1017', 0.88);
     s.setProperty('--b0', base);
-    sc.blobs.forEach((b, i) => s.setProperty('--b' + (i + 1), b ? b + (isDark ? '55' : '70') : 'transparent'));
+    sc.blobs.forEach((b, i) => s.setProperty('--b' + (i + 1), b ? b + (isDark ? '99' : 'b0') : 'transparent'));
     if (/^#[0-9a-f]{6}$/i.test(c.bgColor || '')) {
       s.setProperty('--glass', c.bgColor + '70'); s.setProperty('--glass2', c.bgColor + 'b8');
       s.setProperty('--gline', lum(c.bgColor) < 0.25 ? 'rgba(255,255,255,.14)' : 'rgba(255,255,255,.7)');
@@ -633,14 +634,17 @@
     swatchRow($('stAccent'), ACCENTS, c.accent, '기본', (v) => setDraft({ accent: v }));
     swatchRow($('stBg'), BGS, c.bgColor, '테마 기본', (v) => setDraft({ bgColor: v }));
     const sb = $('stScene'); sb.textContent = '';
+    if (c.acrylic) {
+      const b = el('button', 'scene desk', '바탕화면 비침'); b.type = 'button'; b.setAttribute('aria-pressed', String(c.scene === 'desktop'));
+      b.onclick = () => { setDraft({ scene: 'desktop' }); renderLook(); }; sb.appendChild(b);
+    }
     Object.entries(SCENES).forEach(([k, v]) => {
-      const b = el('button', 'scene', v.name); b.type = 'button'; b.setAttribute('aria-pressed', String((c.scene || 'pastel') === k));
+      const b = el('button', 'scene', v.name); b.type = 'button'; b.setAttribute('aria-pressed', String((SCENES[c.scene] ? c.scene : (c.scene === 'desktop' ? '' : 'pastel')) === k));
       b.style.background = 'radial-gradient(60% 80% at 20% 30%,' + (v.blobs[0] || v.base) + ',transparent),radial-gradient(60% 80% at 80% 70%,' + (v.blobs[1] || v.base) + ',transparent),' + v.base;
       if (v.dark) b.style.color = '#fff';
       b.onclick = () => { setDraft({ scene: k }); renderLook(); };
       sb.appendChild(b);
     });
-    $('stSee').checked = c.glassSeeThrough !== false; $('stSeeWrap').hidden = !c.acrylic;
     $('stGlassRow').hidden = (c.style || 'glass') !== 'glass';
   }
   function swatchRow(box, colors, cur, defLabel, onPick) {
@@ -682,24 +686,31 @@
     });
   }
   // ---------- 설정 미리보기 → 저장/취소 ----------
+  // 설정은 따로 뜨는 창(SET_MODE)에서 고르고, 바뀐 값은 달력 창으로 보내 미리보기한다
+  const SET_MODE = new URLSearchParams(location.search).has('settings');
   function setDraft(patch) {
     if (!S.draft) S.draft = {};
     Object.assign(S.draft, patch);
+    if (SET_MODE) { themeApply(); api.win('draft', patch); return; }
     if ('opacity' in patch) api.win('opacity', patch.opacity);
+    if ('scene' in patch || 'style' in patch) { const v = V(); api.win('material', (v.style || 'glass') === 'glass' && v.scene === 'desktop'); }
     themeApply();
     if ('weekStart' in patch) render();
   }
-  async function saveSettings() {
+  async function saveSettings(remote) {
+    if (SET_MODE) { await saveCreds(); api.win('settingsDone', 'save'); return; }
     const d = S.draft || {}; S.draft = null;
-    await saveCreds();
+    if (!remote) await saveCreds();
     if (Object.keys(d).length) await setCfg(d);
     $('settings').close();
     if ('weekStart' in d || 'hiddenCalendars' in d) load(); else render();
   }
   function cancelSettings() {
+    if (SET_MODE) { api.win('settingsDone', 'cancel'); return; }
     const had = S.draft && Object.keys(S.draft).length; const d = S.draft || {};
     S.draft = null;
     if ('opacity' in d) api.win('opacity', S.cfg.opacity || 1);
+    if ('scene' in d || 'style' in d) api.win('material', (S.cfg.style || 'glass') === 'glass' && S.cfg.scene === 'desktop');
     themeApply();
     if ($('settings').open) $('settings').close();
     if (had && ('weekStart' in d || 'hiddenCalendars' in d)) load(); else if (had) render();
@@ -759,15 +770,16 @@
       $('stStatus').textContent = '브라우저에서 구글 로그인을 마쳐 주세요…';
       const r = await api.login();
       if (!r.ok) { $('stStatus').textContent = '로그인 실패: ' + r.message; return; }
-      S.cfg = r.data; S.cals = []; renderSettings(); await load({ cals: true }); renderSettings();
+      S.cfg = r.data; S.cals = [];
+      if (SET_MODE) { const c = await api.calendars(); if (c.ok) S.cals = c.data; renderSettings(); return; }
+      renderSettings(); await load({ cals: true }); renderSettings();
     };
-    $('stLogout').onclick = async () => { const r = await api.logout(); if (r.ok) { S.cfg = r.data; S.cals = []; S.events = []; renderSettings(); load(); } };
+    $('stLogout').onclick = async () => { const r = await api.logout(); if (r.ok) { S.cfg = r.data; S.cals = []; S.events = []; renderSettings(); if (!SET_MODE) load(); } };
     $('stOpacity').addEventListener('input', () => { $('stOpVal').textContent = $('stOpacity').value + '%'; $('tbOpacity').value = $('stOpacity').value; setDraft({ opacity: +$('stOpacity').value / 100 }); });
     $('stTheme').onchange = () => setDraft({ theme: $('stTheme').value });
     $('stWeek').onchange = () => setDraft({ weekStart: +$('stWeek').value });
     $('stFont').onchange = () => setDraft({ fontFamily: $('stFont').value });
     $('stStyle').onchange = () => { setDraft({ style: $('stStyle').value }); renderLook(); };
-    $('stSee').onchange = () => setDraft({ glassSeeThrough: $('stSee').checked });
     $('tbOpacity').addEventListener('input', () => { const v = +$('tbOpacity').value; $('stOpacity').value = v; $('stOpVal').textContent = v + '%'; setCfg({ opacity: v / 100 }); });
     $('panelHandle').onclick = () => { S.cfg.panelOpen = !S.cfg.panelOpen; api.setCfg({ panelOpen: S.cfg.panelOpen }); applyPanel(); };
     $('stFontSize').addEventListener('input', () => { $('stFsVal').textContent = $('stFontSize').value; setDraft({ fontSize: +$('stFontSize').value }); });
@@ -787,12 +799,19 @@
     api.on('app:focus', () => { if (Date.now() - S.lastFocusLoad > 15000) { S.lastFocusLoad = Date.now(); load(); } });
     api.on('app:refresh', () => load({ cals: true }));
     api.on('app:update', (msg) => banner(msg));
+    api.on('app:settings', (m) => {
+      if (!m) return;
+      if (m.type === 'draft') { setDraft(m.patch || {}); if (m.patch && 'hiddenCalendars' in m.patch) load(); }
+      else if (m.type === 'save') saveSettings(true);
+      else if (m.type === 'cancel') cancelSettings();
+    });
     api.on('app:cfg', async () => { const r = await api.getCfg(); if (r.ok) { S.cfg = r.data; themeApply(); lockApply(); } });
     // 자정이 지나면 오늘 표시 갱신
     let lastDay = todayStr();
     setInterval(() => { if (todayStr() !== lastDay) { lastDay = todayStr(); applyMini(); if (S.cfg.mini) { S.sel = lastDay; S.ym = lastDay.slice(0, 7); load(); } else render(); } }, 60 * 1000);
   }
   function openSettings() {
+    if (!SET_MODE) { S.draft = {}; api.win('openSettings'); return; }
     const dlg = $('settings');
     if (dlg.open) return;
     S.draft = {}; renderSettings(); dlg.show();
@@ -805,7 +824,15 @@
     S.events = []; render(); load();
   }
 
+  async function initSettingsWindow() {
+    document.body.classList.add('settings-mode'); document.title = '예람달력 설정';
+    const r = await api.getCfg(); S.cfg = r.ok ? r.data : {};
+    themeApply(); bind();
+    if (S.cfg.loggedIn) { const c = await api.calendars(); if (c.ok) S.cals = c.data; }
+    S.draft = {}; renderSettings(); $('settings').show();
+  }
   async function init() {
+    if (SET_MODE) return initSettingsWindow();
     const r = await api.getCfg(); S.cfg = r.ok ? r.data : {};
     themeApply(); lockApply(); applyPanel(); bind(); applyMini(); render();
     $('tbOpacity').value = Math.round((S.cfg.opacity || 1) * 100);

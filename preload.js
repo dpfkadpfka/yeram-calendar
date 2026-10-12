@@ -15,7 +15,7 @@ contextBridge.exposeInMainWorld('api', {
   remove: call('ev:delete'),
   win: call('win:action'),
   on: (ch, fn) => {
-    if (!['app:focus', 'app:refresh', 'app:cfg', 'app:update'].includes(ch)) return;
+    if (!['app:focus', 'app:refresh', 'app:cfg', 'app:update', 'app:settings'].includes(ch)) return;
     ipcRenderer.on(ch, (_e, arg) => fn(arg));
   }
 });

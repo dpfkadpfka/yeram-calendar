@@ -12,6 +12,7 @@ const API = 'https://www.googleapis.com/calendar/v3';
 const SCOPE = 'https://www.googleapis.com/auth/calendar';
 
 let win = null;
+let settingsWin = null, settingsDone = false;
 let tray = null;
 let quitting = false;
 
@@ -166,7 +167,7 @@ ipcMain.handle('cfg:set', wrap(async (patch) => {
   saveCfg(); applyWindowCfg();
   return publicCfg();
 }));
-ipcMain.handle('auth:login', wrap(async () => { await login(); return publicCfg(); }));
+ipcMain.handle('auth:login', wrap(async () => { await login(); if (win) { win.webContents.send('app:cfg'); win.webContents.send('app:refresh'); } return publicCfg(); }));
 ipcMain.handle('auth:logout', wrap(async () => {
   const rt = dec(cfg.refreshToken);
   if (rt) fetch('https://oauth2.googleapis.com/revoke?token=' + enc1(rt), { method: 'POST' }).catch(() => {});
@@ -216,6 +217,7 @@ ipcMain.handle('ev:delete', wrap(async (calId, id) => api('DELETE', `/calendars/
 ipcMain.handle('win:action', wrap(async (act, arg) => {
   if (!win) return;
   if (act === 'minimize') win.minimize();
+  if (act === 'material') { const on = !!arg && ACRYLIC; try { if (win.setBackgroundMaterial) win.setBackgroundMaterial(on ? 'acrylic' : 'none'); } catch {} try { win.setBackgroundColor(on ? '#00000000' : '#f6f7f9'); } catch {} }
   if (act === 'opacity') win.setOpacity(Math.min(1, Math.max(0.3, Number(arg) || 1)));
   if (act === 'mini') {
     const on = !!arg; if (on === !!cfg.mini) return;
@@ -233,13 +235,16 @@ ipcMain.handle('win:action', wrap(async (act, arg) => {
   if (act === 'hide') win.hide();
   if (act === 'open' && typeof arg === 'string' && /^https:\/\//.test(arg)) shell.openExternal(arg);
   if (act === 'quit') { quitting = true; app.quit(); }
+  if (act === 'openSettings') openSettingsWindow();
+  if (act === 'draft') win.webContents.send('app:settings', { type: 'draft', patch: arg });
+  if (act === 'settingsDone') { settingsDone = true; win.webContents.send('app:settings', { type: arg === 'save' ? 'save' : 'cancel' }); if (settingsWin) settingsWin.close(); }
 }));
 
 // ---------- 창 ----------
 function applyWindowCfg() {
   if (!win) return;
   win.setOpacity(Math.min(1, Math.max(0.3, Number(cfg.opacity) || 1)));
-  const glass = (cfg.style || 'glass') === 'glass' && ACRYLIC && cfg.glassSeeThrough !== false;
+  const glass = (cfg.style || 'glass') === 'glass' && ACRYLIC && cfg.scene === 'desktop';
   try { if (process.platform === 'win32' && win.setBackgroundMaterial) win.setBackgroundMaterial(glass ? 'acrylic' : 'none'); } catch (e) { console.error(e); }
   try { win.setBackgroundColor(glass ? '#00000000' : '#f6f7f9'); } catch {}
   win.setAlwaysOnTop(!!cfg.alwaysOnTop);
@@ -247,6 +252,25 @@ function applyWindowCfg() {
   win.setResizable(!cfg.locked);
   try { app.setLoginItemSettings({ openAtLogin: !!cfg.autoStart, path: process.execPath }); } catch {}
   if (tray) tray.setContextMenu(trayMenu());
+}
+
+// 설정은 달력 밖으로도 옮길 수 있는 별도 창으로 띄운다
+function openSettingsWindow() {
+  if (settingsWin && !settingsWin.isDestroyed()) { settingsWin.show(); settingsWin.focus(); return; }
+  const b = win.getBounds(); const wa = screen.getDisplayMatching(b).workArea;
+  const w = 560, h = Math.min(780, wa.height - 40);
+  let x = b.x - w - 12; if (x < wa.x) x = Math.min(b.x + b.width + 12, wa.x + wa.width - w); if (x < wa.x) x = wa.x + 20;
+  settingsDone = false;
+  settingsWin = new BrowserWindow({
+    width: w, height: h, x, y: Math.max(wa.y, b.y), minWidth: 420, minHeight: 360, title: '예람달력 설정', icon: iconPath(),
+    autoHideMenuBar: true, alwaysOnTop: !!cfg.alwaysOnTop, backgroundColor: '#f6f7f9', show: false,
+    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true }
+  });
+  settingsWin.setMenuBarVisibility(false);
+  settingsWin.loadFile(path.join(__dirname, 'renderer', 'index.html'), { search: 'settings=1' });
+  settingsWin.once('ready-to-show', () => settingsWin.show());
+  settingsWin.webContents.setWindowOpenHandler(({ url }) => { if (/^https:\/\//.test(url)) shell.openExternal(url); return { action: 'deny' }; });
+  settingsWin.on('closed', () => { if (!settingsDone && win) win.webContents.send('app:settings', { type: 'cancel' }); settingsWin = null; });
 }
 
 function iconPath() { return path.join(__dirname, 'assets', 'icon.png'); }
