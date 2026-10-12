@@ -544,42 +544,46 @@
   }
 
   // ---------- 설정창 ----------
-  // ---------- 테마(컨셉 색 조합) ----------
-  // 그림 없이 배경 그라데이션 + 칸·글자·포인트 색을 한 벌로 맞춘다. stars/galaxy만 코드로 별빛을 뿌린다.
+  // ---------- 테마 ----------
+  // 초판처럼 파스텔 빛이 네 귀퉁이에서 번지는 배경(블롭) + 칸·글자·포인트 색 한 벌. stars/galaxy만 코드로 별빛을 더한다.
+  const BLOB_AT = ['42% 52% at 12% 18%', '40% 48% at 88% 12%', '46% 56% at 72% 92%', '36% 42% at 18% 90%'];
+  const blobBg = (base, blobs, a) => blobs.map((c, i) => c ? 'radial-gradient(' + BLOB_AT[i] + ',' + c + a + ',transparent 70%)' : null).filter(Boolean).concat(base).join(',');
+  const LP = (bg, accent, fg, muted, line) => ({ bg, surface: '#ffffff', surface2: '#ffffff', fg: fg || '#1d2330', muted: muted || '#5f687c', line: line || '#e2e5eb', accent });
+  const DP = (bg, surface, accent, fg, muted, line) => ({ bg, surface, surface2: surface, fg: fg || '#eef0f6', muted: muted || '#a9b0c4', line: line || '#2c3246', accent });
+  const L = (name, base, blobs, pal) => ({ name, bg: blobBg(base, blobs, 'b0'), pal });
+  const D = (name, base, blobs, a, pal, fx) => ({ name, dark: true, fx, bg: blobBg(base, blobs, a), pal });
   const SCENES = {
-    // 밝은 테마
-    sky: { name: '맑은 하늘', bg: 'linear-gradient(180deg,#d6ecff 0%,#eaf4ff 55%,#f7fbff 100%)',
-      pal: { bg: '#e6f2ff', surface: '#ffffff', surface2: '#edf5ff', fg: '#1d2b45', muted: '#66789a', line: '#d6e4f5', accent: '#2563eb' } },
-    paper: { name: '아이보리 노트', bg: 'linear-gradient(160deg,#fbf7ee 0%,#f3ecdc 100%)',
-      pal: { bg: '#f5efe2', surface: '#fffdf7', surface2: '#f2ead9', fg: '#2b2a33', muted: '#7a7468', line: '#e5dbc7', accent: '#2f4a8a' } },
-    monet: { name: '모네 수련', bg: 'radial-gradient(45% 40% at 80% 20%,rgba(232,199,216,.55),transparent 70%),radial-gradient(50% 45% at 15% 85%,rgba(180,220,200,.6),transparent 70%),linear-gradient(160deg,#dde8f4 0%,#e6e0f3 50%,#e0efe8 100%)',
-      pal: { bg: '#e4e8f3', surface: '#fbfcff', surface2: '#eef0f8', fg: '#26304a', muted: '#6f7894', line: '#dde2ef', accent: '#6b7fd7' } },
-    sakura: { name: '벚꽃', bg: 'radial-gradient(50% 40% at 85% 15%,rgba(255,190,210,.55),transparent 70%),linear-gradient(160deg,#fff1f5 0%,#ffe4ec 50%,#fff6f0 100%)',
-      pal: { bg: '#ffeaf0', surface: '#fffafb', surface2: '#fcedf2', fg: '#3a2530', muted: '#8f6f7d', line: '#f3d8e2', accent: '#e05a8a' } },
-    lemon: { name: '레몬 소다', bg: 'radial-gradient(45% 40% at 20% 15%,rgba(255,236,140,.6),transparent 70%),linear-gradient(160deg,#fffbe2 0%,#eafbf2 60%,#dff6f6 100%)',
-      pal: { bg: '#f0f9ee', surface: '#fffffa', surface2: '#f1f8ec', fg: '#22332e', muted: '#6a7e77', line: '#e1ecda', accent: '#0f9f96' } },
-    lavender: { name: '라벤더 밭', bg: 'radial-gradient(50% 40% at 80% 85%,rgba(200,220,190,.55),transparent 70%),linear-gradient(160deg,#f1ecfb 0%,#e8e2f7 55%,#eef2ea 100%)',
-      pal: { bg: '#ece7f8', surface: '#fdfbff', surface2: '#f1ecfa', fg: '#2e2640', muted: '#7a7092', line: '#e1daf1', accent: '#7c5cd6' } },
-    apricot: { name: '살구 크림', bg: 'radial-gradient(45% 40% at 85% 20%,rgba(255,196,160,.5),transparent 70%),linear-gradient(160deg,#fff3ea 0%,#ffe8da 55%,#fff8ef 100%)',
-      pal: { bg: '#ffeee3', surface: '#fffcf9', surface2: '#fbefe5', fg: '#3a2a22', muted: '#8e7466', line: '#f0dccd', accent: '#ee6a45' } },
-    // 어두운 테마
-    starry: { name: '별이 빛나는 밤', dark: true, fx: 'stars', bg: 'radial-gradient(35% 30% at 78% 14%,rgba(246,209,74,.22),transparent 70%),radial-gradient(55% 45% at 25% 35%,rgba(70,130,210,.35),transparent 70%),linear-gradient(170deg,#0c1f55 0%,#14306f 55%,#0b1a45 100%)',
-      pal: { bg: '#0e2154', surface: '#162b62', surface2: '#1e3674', fg: '#eef2ff', muted: '#a9b7dd', line: '#2b437c', accent: '#f6d14a' } },
-    galaxy: { name: '은하수', dark: true, fx: 'galaxy', bg: 'linear-gradient(170deg,#05061a 0%,#0c0f32 55%,#1a1238 100%)',
-      pal: { bg: '#0a0b22', surface: '#12152f', surface2: '#1a1e3e', fg: '#f1eeff', muted: '#a9a6ca', line: '#272b4e', accent: '#e9a6ff' } },
-    aurora: { name: '오로라', dark: true, fx: 'stars', bg: 'radial-gradient(60% 40% at 30% 8%,rgba(47,243,160,.24),transparent 70%),radial-gradient(50% 40% at 82% 18%,rgba(176,108,255,.22),transparent 70%),linear-gradient(170deg,#04161c 0%,#082730 60%,#06141b 100%)',
-      pal: { bg: '#071c22', surface: '#0d252c', surface2: '#133038', fg: '#e6fbf4', muted: '#95bdb4', line: '#1e3e45', accent: '#45f0b0' } },
-    deepsea: { name: '깊은 바다', dark: true, bg: 'radial-gradient(45% 35% at 72% 88%,rgba(255,127,102,.16),transparent 70%),radial-gradient(55% 45% at 20% 20%,rgba(40,140,190,.28),transparent 70%),linear-gradient(170deg,#031b2a 0%,#06304a 55%,#021623 100%)',
-      pal: { bg: '#04243a', surface: '#0a2a3d', surface2: '#0f354c', fg: '#e6f6ff', muted: '#93b4c6', line: '#18425a', accent: '#ff8a6b' } },
-    wine: { name: '와인 & 골드', dark: true, bg: 'radial-gradient(40% 35% at 80% 15%,rgba(232,194,106,.18),transparent 70%),linear-gradient(170deg,#2a0f1a 0%,#3a1424 55%,#220b15 100%)',
-      pal: { bg: '#2c101c', surface: '#3a1726', surface2: '#461d2f', fg: '#fbeef2', muted: '#c9a3b0', line: '#55253a', accent: '#e8c26a' } },
-    mocha: { name: '모카 라떼', dark: true, bg: 'radial-gradient(45% 40% at 80% 85%,rgba(242,162,124,.14),transparent 70%),linear-gradient(170deg,#1f1612 0%,#2b1f19 60%,#1a120e 100%)',
-      pal: { bg: '#211813', surface: '#2c211b', surface2: '#382a22', fg: '#f4ebe3', muted: '#c0aa9a', line: '#44342b', accent: '#f2a27c' } },
-    charcoal: { name: '차콜 민트', dark: true, bg: 'linear-gradient(170deg,#141517 0%,#1c1d20 100%)',
-      pal: { bg: '#17181a', surface: '#222327', surface2: '#2b2c31', fg: '#ececee', muted: '#a2a3a8', line: '#34353a', accent: '#5fd4b0' } }
+    // 밝은 파스텔(초판)
+    pastel: L('파스텔', '#eef1f8', ['#7b9cff', '#ff8cbe', '#6edcc8', '#ffc86e'], LP('#eef1f8', '#2f5bd3')),
+    sunset: L('노을', '#fbeee8', ['#ff9a6b', '#ff6f91', '#ffc371', '#c47dff'], LP('#fbeee8', '#e8577a', '#33232a', '#80656e', '#f0dcd8')),
+    ocean: L('바다', '#e9f3fb', ['#3fa9f5', '#6ee7f2', '#4f7cff', '#9fe3c4'], LP('#e9f3fb', '#1e7fd6', '#1b2a3a', '#5d7085', '#d8e6f2')),
+    forest: L('숲', '#edf5ec', ['#58c48a', '#a6d96a', '#2fa38f', '#e8d36b'], LP('#edf5ec', '#23945f', '#1f2d24', '#5e7465', '#dbe8d9')),
+    lilac: L('라벤더', '#f2eefb', ['#a78bfa', '#f0abfc', '#818cf8', '#c4b5fd'], LP('#f2eefb', '#7c5cd6', '#2a2440', '#6f6890', '#e3dcf3')),
+    peach: L('복숭아', '#fdf1ea', ['#ffb38a', '#ffd6a5', '#ff8fab', '#fdffb6'], LP('#fdf1ea', '#ec6a4c', '#35261f', '#856d62', '#f1ded3')),
+    sky: L('맑은 하늘', '#eaf4ff', ['#8cc8ff', '#c9e6ff', '#6fa8ff', '#ffe7a3'], LP('#eaf4ff', '#2563eb', '#1d2b45', '#5d6f90', '#d6e4f5')),
+    monet: L('모네 수련', '#e9edf6', ['#a9bdf0', '#f2bfd8', '#93d6bb', '#d5c3f2'], LP('#e9edf6', '#6b7fd7', '#26304a', '#68718e', '#dde2ef')),
+    sakura: L('벚꽃', '#fff3f6', ['#ffb0c6', '#ffd3df', '#f79bb5', '#fff0b8'], LP('#fff3f6', '#e05a8a', '#3a2530', '#8a6b79', '#f3d8e2')),
+    lemon: L('레몬 소다', '#f5fbef', ['#ffe36e', '#9ef0d0', '#c3f27c', '#7fdbe6'], LP('#f5fbef', '#0f9f96', '#22332e', '#617770', '#e1ecda')),
+    paper: L('아이보리', '#f8f3e8', ['#f1dca8', '#e9d6c0', '#e6cfa6', '#d9e3cf'], LP('#f8f3e8', '#2f4a8a', '#2b2a33', '#756f63', '#e5dbc7')),
+    plain: L('단색', '#eef0f4', [null, null, null, null], LP('#eef0f4', '#2f5bd3')),
+    // 어두운 테마 — 같은 번짐을 어두운 바탕 위에
+    pastelnight: D('파스텔 나이트', '#15161d', ['#7b9cff', '#ff8cbe', '#6edcc8', '#ffc86e'], '5c', DP('#15161d', '#20222c', '#9db3ff')),
+    starry: D('별이 빛나는 밤', '#0a1844', ['#f6d14a', '#3d7be0', '#2a4fb0', '#6fa8ff'], '66', DP('#0e2154', '#16295c', '#f6d14a', '#eef2ff', '#a9b7dd', '#2b437c'), 'stars'),
+    galaxy: D('은하수', '#04050f', ['#3b2a7a', '#1d3a7a', '#5a2a6a', '#16305a'], '80', DP('#070816', '#141629', '#c9b8ff', '#f1eeff', '#a9a6ca', '#272b4e'), 'galaxy'),
+    aurora: D('오로라', '#041a20', ['#2ff3a0', '#b06cff', '#1fb5c9', '#3d8bff'], '5c', DP('#071c22', '#0f262d', '#45f0b0', '#e6fbf4', '#95bdb4', '#1e3e45'), 'stars'),
+    deepsea: D('깊은 바다', '#031d2e', ['#1f8fc4', '#ff8a6b', '#0e6f9a', '#3fd0d0'], '5c', DP('#04243a', '#0b2b3e', '#ff8a6b', '#e6f6ff', '#93b4c6', '#18425a')),
+    wine: D('와인 & 골드', '#220b15', ['#e8c26a', '#b0305a', '#8a2450', '#ff8a7a'], '55', DP('#2c101c', '#381624', '#e8c26a', '#fbeef2', '#c9a3b0', '#55253a')),
+    mocha: D('모카 라떼', '#1a120e', ['#f2a27c', '#a0623e', '#d9a066', '#7a5240'], '4d', DP('#211813', '#2b201a', '#f2a27c', '#f4ebe3', '#c0aa9a', '#44342b'))
   };
-  const DEFAULT_SCENE = 'sky';
-  const sceneOf = (c) => SCENES[c.scene] || (c.scene === 'desktop' ? null : SCENES[DEFAULT_SCENE]);
+  const DEFAULT_SCENE = 'pastel';
+  const SCENE_ALIAS = { lavender: 'lilac', apricot: 'peach', charcoal: 'pastelnight' };
+  function photoScene(c) {
+    const dk = !!c.bgImageDark, dim = (c.bgImageDim == null ? 15 : +c.bgImageDim) / 100;
+    const ov = dk ? 'rgba(0,0,0,' + dim + ')' : 'rgba(255,255,255,' + dim + ')';
+    return { name: '내 사진', dark: dk, photo: true, bg: 'linear-gradient(' + ov + ',' + ov + '),url("' + c.bgImage + '") center/cover no-repeat fixed',
+      pal: dk ? DP('#14161d', '#1c1f29', '#9db3ff') : LP('#eef0f4', '#2f5bd3') };
+  }
+  const sceneOf = (c) => (c.scene === 'photo' && c.bgImage ? photoScene(c) : null) || SCENES[c.scene] || SCENES[SCENE_ALIAS[c.scene]] || (c.scene === 'desktop' ? null : SCENES[DEFAULT_SCENE]);
   const glassOn = (c) => (c.style || 'glass') === 'glass';
   function sceneIsDark(c) { const sc = sceneOf(c); return glassOn(c) && !!(sc && sc.dark); }
   function themeApply() {
@@ -612,8 +616,8 @@
       const P = sc.pal, set = (k, v) => s.setProperty(k, v);
       set('--bg', P.bg); set('--surface', P.surface); set('--surface2', P.surface2); set('--fg', P.fg); set('--muted', P.muted); set('--line', P.line);
       set('--accent', P.accent); set('--sat', P.accent); set('--accent-soft', 'color-mix(in srgb,' + P.accent + ' 18%, ' + P.surface + ')');
-      set('--glass', P.surface + (sc.dark ? 'cc' : 'b8')); set('--glass2', P.surface2 + (sc.dark ? 'ee' : 'e8'));
-      set('--gline', sc.dark ? 'rgba(255,255,255,.08)' : 'rgba(255,255,255,.75)');
+      set('--glass', P.surface + (sc.dark ? '80' : '57')); set('--glass2', P.surface2 + (sc.dark ? 'bf' : '9e'));
+      set('--gline', sc.dark ? 'rgba(255,255,255,.12)' : 'rgba(255,255,255,.7)');
       document.body.style.background = sc.bg;
     }
     // 2) 직접 고른 포인트 색·카드 색이 있으면 우선
@@ -670,7 +674,7 @@
     swatchRow($('stAccent'), ACCENTS, c.accent, '기본', (v) => setDraft({ accent: v }));
     swatchRow($('stBg'), BGS, c.bgColor, '테마 기본', (v) => setDraft({ bgColor: v }));
     const sb = $('stScene'); sb.textContent = '';
-    const cur = c.scene === 'desktop' ? 'desktop' : (SCENES[c.scene] ? c.scene : DEFAULT_SCENE);
+    const cur = c.scene === 'desktop' ? 'desktop' : (c.scene === 'photo' && c.bgImage ? 'photo' : SCENES[c.scene] ? c.scene : (SCENE_ALIAS[c.scene] || DEFAULT_SCENE));
     const addBtn = (key, label, bgCss, dark, accent) => {
       const b = el('button', 'scene' + (dark ? ' dk' : ''), label); b.type = 'button'; b.setAttribute('aria-pressed', String(cur === key));
       if (bgCss) b.style.background = bgCss;
@@ -681,7 +685,42 @@
     Object.entries(SCENES).filter(([, v]) => !v.dark).forEach(([k, v]) => addBtn(k, v.name, v.bg, false, v.pal.accent));
     sb.appendChild(el('div', 'scene-break'));
     Object.entries(SCENES).filter(([, v]) => v.dark).forEach(([k, v]) => addBtn(k, v.name, v.bg, true, v.pal.accent));
+    sb.appendChild(el('div', 'scene-break'));
+    if (c.bgImage) { const ps = photoScene(c); addBtn('photo', '내 사진', ps.bg.replace(' fixed', ''), ps.dark, ''); }
+    const pickB = el('button', 'scene photo-pick', c.bgImage ? '사진 바꾸기' : '+ 사진으로'); pickB.type = 'button';
+    pickB.onclick = () => pickPhoto(); sb.appendChild(pickB);
+    if (cur === 'photo') {
+      const dimRow = el('div', 'photo-dim'); dimRow.appendChild(el('span', null, c.bgImageDark ? '사진 어둡게' : '사진 흐리게'));
+      const rg = el('input'); rg.type = 'range'; rg.min = 0; rg.max = 75; rg.value = c.bgImageDim == null ? 15 : c.bgImageDim;
+      rg.oninput = () => setDraft({ bgImageDim: +rg.value });
+      dimRow.appendChild(rg);
+      const tg = el('button', null, c.bgImageDark ? '밝은 글자 → 어두운 글자' : '어두운 글자 → 밝은 글자'); tg.type = 'button';
+      tg.onclick = () => { setDraft({ bgImageDark: !c.bgImageDark }); renderLook(); };
+      dimRow.appendChild(tg); sb.appendChild(dimRow);
+    }
     $('stGlassRow').hidden = (c.style || 'glass') !== 'glass';
+  }
+  // 사진 배경: 긴 변 2400px JPEG로 줄여 저장, 평균 밝기로 글자색(밝은/어두운) 자동 선택
+  function pickPhoto() {
+    const inp = el('input'); inp.type = 'file'; inp.accept = 'image/*';
+    inp.onchange = () => {
+      const f = inp.files && inp.files[0]; if (!f) return;
+      const url = URL.createObjectURL(f), im = new Image();
+      im.onload = () => {
+        const k = Math.min(1, 2400 / Math.max(im.naturalWidth, im.naturalHeight));
+        const cv = document.createElement('canvas'); cv.width = Math.round(im.naturalWidth * k); cv.height = Math.round(im.naturalHeight * k);
+        cv.getContext('2d').drawImage(im, 0, 0, cv.width, cv.height);
+        const sm = document.createElement('canvas'); sm.width = 32; sm.height = 32; const sx = sm.getContext('2d'); sx.drawImage(im, 0, 0, 32, 32);
+        const px = sx.getImageData(0, 0, 32, 32).data; let L = 0; for (let i = 0; i < px.length; i += 4) L += 0.2126 * px[i] + 0.7152 * px[i + 1] + 0.0722 * px[i + 2];
+        L /= (px.length / 4) * 255;
+        URL.revokeObjectURL(url);
+        setDraft({ bgImage: cv.toDataURL('image/jpeg', 0.86), bgImageDark: L < 0.5, bgImageDim: L < 0.5 ? 25 : 20, scene: 'photo' });
+        renderLook();
+      };
+      im.onerror = () => { URL.revokeObjectURL(url); banner('사진을 열 수 없어요'); };
+      im.src = url;
+    };
+    inp.click();
   }
   function swatchRow(box, colors, cur, defLabel, onPick) {
     box.textContent = '';
