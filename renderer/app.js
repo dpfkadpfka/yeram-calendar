@@ -594,11 +594,37 @@
       s.setProperty('--glass', P.surface + 'd9'); s.setProperty('--glass2', P.surface2 + 'f0'); s.setProperty('--gline', 'rgba(255,255,255,.07)');
       sc.blobs.forEach((b, i) => s.setProperty('--b' + (i + 1), b ? b + '55' : 'transparent'));
     }
+    // 그림 배경
+    const artOn = (c.style || 'glass') === 'glass' && !!sc.art && c.scene !== 'desktop';
+    if (artOn) {
+      document.documentElement.dataset.art = '1'; paintArt(sc.art);
+      if (sc.dark && sc.pal) { s.setProperty('--glass', sc.pal.surface + 'b8'); s.setProperty('--glass2', sc.pal.surface2 + 'e6'); }
+      else { s.setProperty('--glass', 'rgba(255,255,255,.58)'); s.setProperty('--glass2', 'rgba(255,255,255,.8)'); s.setProperty('--gline', 'rgba(255,255,255,.75)'); }
+      if (sc.accent && !/^#[0-9a-f]{6}$/i.test(c.accent || '')) { s.setProperty('--accent', sc.accent); s.setProperty('--sat', sc.accent); s.setProperty('--accent-soft', 'color-mix(in srgb,' + sc.accent + ' 16%, #ffffff)'); }
+    } else delete document.documentElement.dataset.art;
     if (/^#[0-9a-f]{6}$/i.test(c.bgColor || '')) {
       s.setProperty('--glass', c.bgColor + '70'); s.setProperty('--glass2', c.bgColor + 'b8');
       s.setProperty('--gline', lum(c.bgColor) < 0.25 ? 'rgba(255,255,255,.14)' : 'rgba(255,255,255,.7)');
     }
     requestAnimationFrame(fitChips);
+  }
+  // ---------- 그림 배경 그리기 ----------
+  let artKey = '';
+  function paintArt(name) {
+    const cv = $('art'); if (!cv || !window.YeramArt) return;
+    const z = parseFloat(document.body.style.zoom || '1') || 1;
+    const w = cv.clientWidth || window.innerWidth, h = cv.clientHeight || window.innerHeight;
+    const key = name + ':' + w + 'x' + h + ':' + z;
+    if (key === artKey) return; artKey = key;
+    window.YeramArt.draw(name, cv, w, h, (window.devicePixelRatio || 1) * z);
+  }
+  let artTimer = null;
+  window.addEventListener('resize', () => { clearTimeout(artTimer); artTimer = setTimeout(() => { const sc = SCENES[V().scene]; if (document.documentElement.dataset.art && sc && sc.art) paintArt(sc.art); }, 180); });
+  const thumbCache = {};
+  function artThumb(name) {
+    if (thumbCache[name]) return thumbCache[name];
+    const c = document.createElement('canvas'); if (!window.YeramArt || !window.YeramArt.draw(name, c, 160, 96, 1)) return '';
+    return (thumbCache[name] = c.toDataURL());
   }
   const SCENES = {
     pastel: { name: '파스텔', base: '#eef1f8', blobs: ['#7b9cff', '#ff8cbe', '#6edcc8', '#ffc86e'] },
@@ -608,6 +634,19 @@
     lavender: { name: '라벤더', base: '#f2eefb', blobs: ['#a78bfa', '#f0abfc', '#818cf8', '#c4b5fd'] },
     peach: { name: '복숭아', base: '#fdf1ea', blobs: ['#ffb38a', '#ffd6a5', '#ff8fab', '#fdffb6'] },
     plain: { name: '단색', base: '#eef0f4', blobs: [null, null, null, null] },
+    // 그림 배경(명화·자연 컨셉)
+    sakura: { name: '벚꽃', base: '#fde7ef', art: 'sakura', accent: '#e8578a', blobs: [null, null, null, null] },
+    monet: { name: '모네의 수련', base: '#b9d3e3', art: 'monet', accent: '#5f7fbf', blobs: [null, null, null, null] },
+    clouds: { name: '뭉게구름', base: '#bfe0fb', art: 'clouds', accent: '#2f7fd6', blobs: [null, null, null, null] },
+    sea: { name: '여름 바다', base: '#8fd3ff', art: 'sea', accent: '#1593cf', blobs: [null, null, null, null] },
+    starry: { name: '별이 빛나는 밤', base: '#0f2557', dark: true, art: 'starry', blobs: [null, null, null, null],
+      pal: { bg: '#0d1d45', surface: '#14295a', surface2: '#1c346d', fg: '#eef2ff', muted: '#a9b7dd', line: '#2b437c', accent: '#f6d14a' } },
+    milkyway: { name: '은하수', base: '#0b0f2c', dark: true, art: 'milkyway', blobs: [null, null, null, null],
+      pal: { bg: '#090b1c', surface: '#12152e', surface2: '#1a1e3d', fg: '#f1eeff', muted: '#a9a6ca', line: '#272b4e', accent: '#f0a6ff' } },
+    aurora2: { name: '오로라 밤', base: '#06222b', dark: true, art: 'aurora', blobs: [null, null, null, null],
+      pal: { bg: '#06171d', surface: '#0d252c', surface2: '#133038', fg: '#e6fbf4', muted: '#95bdb4', line: '#1e3e45', accent: '#45f0b0' } },
+    fireflies: { name: '반딧불 숲', base: '#0d2a20', dark: true, art: 'fireflies', blobs: [null, null, null, null],
+      pal: { bg: '#0a1a14', surface: '#11251d', surface2: '#183126', fg: '#edf7e8', muted: '#a0c0aa', line: '#234130', accent: '#d9ff6b' } },
     // 어두운 테마: 배경 빛 번짐은 은은하게, 글자·칸·선 색까지 한 벌로 맞춘 팔레트
     midnight: { name: '미드나잇', base: '#0d1424', dark: true, blobs: ['#3b5bdb', '#5f3dc4', '#1c7ed6', null],
       pal: { bg: '#0d1424', surface: '#162038', surface2: '#1f2b49', fg: '#e8eefc', muted: '#98a6c6', line: '#2a3756', accent: '#7aa2ff' } },
@@ -656,7 +695,8 @@
     }
     Object.entries(SCENES).forEach(([k, v]) => {
       const b = el('button', 'scene', v.name); b.type = 'button'; b.setAttribute('aria-pressed', String((SCENES[c.scene] ? c.scene : (c.scene === 'desktop' ? '' : 'pastel')) === k));
-      b.style.background = 'radial-gradient(60% 80% at 20% 30%,' + (v.blobs[0] || v.base) + ',transparent),radial-gradient(60% 80% at 80% 70%,' + (v.blobs[1] || v.base) + ',transparent),' + v.base;
+      if (v.art) { const u = artThumb(v.art); b.style.background = u ? 'center/cover no-repeat url(' + u + ')' : v.base; b.classList.add('art'); }
+      else b.style.background = 'radial-gradient(60% 80% at 20% 30%,' + (v.blobs[0] || v.base) + ',transparent),radial-gradient(60% 80% at 80% 70%,' + (v.blobs[1] || v.base) + ',transparent),' + v.base;
       if (v.dark) b.style.color = '#fff';
       b.onclick = () => { setDraft({ scene: k }); renderLook(); };
       sb.appendChild(b);

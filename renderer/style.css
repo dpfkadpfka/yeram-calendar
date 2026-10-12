@@ -370,3 +370,11 @@ body.settings-mode #settings{position:static;width:100%;max-width:none;max-heigh
 body.settings-mode #settings .dlg-head{cursor:default}
 body.settings-mode #settings .drag-hint{display:none}
 body.settings-mode #stClose{display:none}
+
+/* 그림 배경 */
+#art{position:fixed;inset:0;width:100%;height:100%;z-index:-1;display:none;pointer-events:none}
+:root[data-art="1"] #art{display:block}
+:root[data-art="1"] body{background:var(--b0)}
+:root[data-art="1"][data-style="glass"] .cell{backdrop-filter:blur(5px) saturate(130%)}
+:root[data-art="1"][data-style="glass"] .titlebar,:root[data-art="1"][data-style="glass"] .panel{backdrop-filter:blur(12px) saturate(140%)}
+.scenes .scene.art{text-shadow:0 1px 3px rgba(0,0,0,.65);color:#fff!important;width:84px}
