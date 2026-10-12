@@ -586,6 +586,14 @@
     let base = sc.base; if (isDark && !sc.dark) base = mix(base, '#0d1017', 0.88);
     s.setProperty('--b0', base);
     sc.blobs.forEach((b, i) => s.setProperty('--b' + (i + 1), b ? b + (isDark ? '99' : 'b0') : 'transparent'));
+    // 어두운 테마 팔레트 적용 (카드 색을 따로 고르지 않았을 때)
+    if (sc.pal && sceneIsDark(c) && !/^#[0-9a-f]{6}$/i.test(c.bgColor || '')) {
+      const P = sc.pal;
+      [['--bg', P.bg], ['--surface', P.surface], ['--surface2', P.surface2], ['--fg', P.fg], ['--muted', P.muted], ['--line', P.line]].forEach(([k, v]) => s.setProperty(k, v));
+      if (!/^#[0-9a-f]{6}$/i.test(c.accent || '')) { s.setProperty('--accent', P.accent); s.setProperty('--sat', P.accent); s.setProperty('--accent-soft', 'color-mix(in srgb,' + P.accent + ' 20%, ' + P.surface + ')'); }
+      s.setProperty('--glass', P.surface + 'd9'); s.setProperty('--glass2', P.surface2 + 'f0'); s.setProperty('--gline', 'rgba(255,255,255,.07)');
+      sc.blobs.forEach((b, i) => s.setProperty('--b' + (i + 1), b ? b + '55' : 'transparent'));
+    }
     if (/^#[0-9a-f]{6}$/i.test(c.bgColor || '')) {
       s.setProperty('--glass', c.bgColor + '70'); s.setProperty('--glass2', c.bgColor + 'b8');
       s.setProperty('--gline', lum(c.bgColor) < 0.25 ? 'rgba(255,255,255,.14)' : 'rgba(255,255,255,.7)');
@@ -600,13 +608,21 @@
     lavender: { name: '라벤더', base: '#f2eefb', blobs: ['#a78bfa', '#f0abfc', '#818cf8', '#c4b5fd'] },
     peach: { name: '복숭아', base: '#fdf1ea', blobs: ['#ffb38a', '#ffd6a5', '#ff8fab', '#fdffb6'] },
     plain: { name: '단색', base: '#eef0f4', blobs: [null, null, null, null] },
-    night: { name: '밤하늘', base: '#121729', dark: true, blobs: ['#4c51bf', '#7f5af0', '#2cb1bc', '#ff6f91'] },
-    deepsea: { name: '심해', base: '#0a1622', dark: true, blobs: ['#0e7490', '#1d4ed8', '#14b8a6', '#0369a1'] },
-    aurora: { name: '오로라', base: '#0d1418', dark: true, blobs: ['#22c55e', '#a855f7', '#06b6d4', '#16a34a'] },
-    dusk: { name: '노을밤', base: '#1a1220', dark: true, blobs: ['#f97316', '#db2777', '#7c3aed', '#f59e0b'] },
-    galaxy: { name: '은하수', base: '#100c1c', dark: true, blobs: ['#c026d3', '#4f46e5', '#ec4899', '#38bdf8'] },
-    nightforest: { name: '밤숲', base: '#0e1712', dark: true, blobs: ['#15803d', '#65a30d', '#0f766e', '#ca8a04'] },
-    black: { name: '블랙', base: '#0b0c10', dark: true, blobs: [null, null, null, null] }
+    // 어두운 테마: 배경 빛 번짐은 은은하게, 글자·칸·선 색까지 한 벌로 맞춘 팔레트
+    midnight: { name: '미드나잇', base: '#0d1424', dark: true, blobs: ['#3b5bdb', '#5f3dc4', '#1c7ed6', null],
+      pal: { bg: '#0d1424', surface: '#162038', surface2: '#1f2b49', fg: '#e8eefc', muted: '#98a6c6', line: '#2a3756', accent: '#7aa2ff' } },
+    charcoal: { name: '차콜', base: '#161718', dark: true, blobs: [null, null, null, null],
+      pal: { bg: '#161718', surface: '#202124', surface2: '#2a2b2f', fg: '#ececee', muted: '#a2a3a8', line: '#323338', accent: '#5fd4b0' } },
+    mocha: { name: '모카', base: '#1b1512', dark: true, blobs: ['#9c4f2e', '#7a4a2a', '#b7793f', null],
+      pal: { bg: '#1b1512', surface: '#271e19', surface2: '#322721', fg: '#f4ebe3', muted: '#c0aa9a', line: '#3d3029', accent: '#f2a27c' } },
+    plum: { name: '플럼 로즈', base: '#1c1118', dark: true, blobs: ['#c2255c', '#9c36b5', '#e64980', null],
+      pal: { bg: '#1c1118', surface: '#2a1923', surface2: '#35202d', fg: '#fbe9f2', muted: '#c9a4b7', line: '#432a39', accent: '#ff8fbe' } },
+    deepforest: { name: '딥 포레스트', base: '#0f1915', dark: true, blobs: ['#2b8a3e', '#087f5b', '#5c940d', null],
+      pal: { bg: '#0f1915', surface: '#17251f', surface2: '#1f3129', fg: '#e5f2ea', muted: '#9ab9a8', line: '#28403a', accent: '#7fd6a0' } },
+    night: { name: '밤하늘', base: '#0b0f1f', dark: true, blobs: ['#4c51bf', '#7048e8', '#1098ad', '#e64980'],
+      pal: { bg: '#0b0f1f', surface: '#141a33', surface2: '#1c2442', fg: '#eef0ff', muted: '#a3a9cc', line: '#262f52', accent: '#ffd479' } },
+    oled: { name: '올 블랙', base: '#000000', dark: true, blobs: [null, null, null, null],
+      pal: { bg: '#000000', surface: '#0d0d0f', surface2: '#18181b', fg: '#f4f4f5', muted: '#8e8e96', line: '#1f1f23', accent: '#b197fc' } }
   };
   let fontList = null;
   async function loadFonts() {
