@@ -56,18 +56,20 @@
         <input id="searchInput" type="search" placeholder="제목·메모·장소 검색 (앞뒤 1년)" autocomplete="off">
       </div>
       <div class="plist" id="plist"></div>
+      <div class="memo-box" id="foot-memo">
+        <div class="memo-head">
+          <b>메모</b><span class="memo-cnt" id="noteCount"></span>
+          <button class="memo-tog" id="footClose" type="button">접기</button>
+        </div>
+        <div class="notes" id="notes"></div>
+      </div>
     </aside>
   </div>
 
   <footer class="foot" id="foot">
-    <div class="foot-bar">
-      <button class="foot-tog" id="footClose" type="button" title="하단 메모 접기">▾ 메모</button>
-      <span id="syncText">불러오는 중</span>
-      <span class="hint">날짜 더블클릭: 추가 · 일정 끌어서 옮기기</span>
-    </div>
-    <div class="notes" id="notes"></div>
+    <span id="syncText">불러오는 중</span>
+    <span class="hint">날짜 더블클릭: 추가 · 일정 끌어서 옮기기</span>
   </footer>
-  <button class="foot-tab" id="footOpen" type="button" title="하단 메모 열기">▴ 메모 <b id="noteCount"></b></button>
 </div>
 
 <dialog id="editor">

@@ -302,8 +302,10 @@
   }
   function applyFoot() {
     const open = S.cfg.footOpen !== false;
-    $('foot').classList.toggle('closed', !open); $('footOpen').hidden = open;
+    // 메모는 오른쪽 아래 상자에 따로(캘린더 칸과 겹치지 않음)
+    $('foot-memo').classList.toggle('closed', !open);
     $('noteCount').textContent = notesOf().length || '';
+    $('footClose').textContent = open ? '접기' : '펼치기';
     if (open) renderNotes();
   }
   function renderNotes() {
@@ -662,6 +664,12 @@
     softaurora: D('소프트 오로라', '#090b18', ['#19c9a8', '#6f55ff', '#2a66ff', '#c04bd8'], '99', DP('#0c0e1d', '#151829', '#5ef0c8', '#eef1fb', '#a6adc6', '#262b44'), 'starsGrain'),
     nightwave: { name: '밤 물결', dark: true, fx: 'wavesNight', bg: 'linear-gradient(180deg,#0b0d22,#14123a)', pal: DP('#0e1030', '#181a3c', '#b49cff', '#f0eeff', '#aaa8cc', '#2b2c58') },
     neon: D('네온 시티', '#0b0614', ['#ff3cac', '#2bd2ff', '#784ba0', '#ff8a3c'], '8c', DP('#0d0818', '#171124', '#ff5cbc', '#f7eefb', '#b5a7c4', '#2e2340'), 'grain'),
+    hud: { name: 'HUD', dark: true, fx: 'hud', bg: 'radial-gradient(60% 50% at 80% 30%,rgba(20,120,170,.35),transparent 70%),radial-gradient(50% 45% at 15% 85%,rgba(20,90,140,.3),transparent 70%),linear-gradient(170deg,#030b14 0%,#06141f 55%,#020910 100%)',
+      pal: DP('#04101a', '#0a1b28', '#4fd8ff', '#dff6ff', '#86b3c6', '#15384a') },
+    moonlight: { name: '달빛', dark: true, fx: 'moon', bg: 'radial-gradient(70% 60% at 74% 30%,rgba(90,110,170,.45),transparent 70%),linear-gradient(175deg,#0b1024 0%,#141a36 55%,#0a0e20 100%)',
+      pal: DP('#0e1328', '#171d38', '#cdd8ff', '#eef1fb', '#a7b0cf', '#2a3156') },
+    medieval: { name: '중세 골드', dark: true, fx: 'medieval', gline: 'rgba(212,175,55,.42)', font: '"Batang","바탕","Noto Serif KR",serif', bg: 'linear-gradient(170deg,#100c07 0%,#0a0806 60%,#060504 100%)',
+      pal: DP('#0e0b07', '#1a140c', '#d4af37', '#f2e6c4', '#b9a77c', '#3d3018') },
     mocha: D('모카 라떼', '#1a120e', ['#f2a27c', '#a0623e', '#d9a066', '#7a5240'], '4d', DP('#211813', '#2b201a', '#f2a27c', '#f4ebe3', '#c0aa9a', '#44342b'))
   };
   // ---------- 입체(3D) 스킨: 바탕·카드·그림자·하이라이트 한 벌 ----------
@@ -737,6 +745,8 @@
       set('--glass', P.surface + (sc.dark ? '80' : '57')); set('--glass2', P.surface2 + (sc.dark ? 'bf' : '9e'));
       set('--gline', sc.dark ? 'rgba(255,255,255,.12)' : 'rgba(255,255,255,.7)');
       document.body.style.background = sc.bg;
+      if (sc.gline) set('--gline', sc.gline);
+      if (sc.font && !c.fontFamily) set('--font', sc.font);
     }
     const k3 = skin3dOf(c);
     if (k3) {
@@ -1013,8 +1023,7 @@
     $('tbOpacity').addEventListener('input', () => { const v = +$('tbOpacity').value; $('stOpacity').value = v; $('stOpVal').textContent = v + '%'; setCfg({ opacity: v / 100 }); });
     Array.from(document.querySelectorAll('#stNav button')).forEach(b => b.onclick = () => showStPage(b.dataset.page));
     Array.from(document.querySelectorAll('#stStyleSeg button')).forEach(b => b.onclick = () => { $('stStyle').value = b.dataset.v; setDraft({ style: b.dataset.v }); renderLook(); });
-    $('footClose').onclick = () => { S.cfg.footOpen = false; api.setCfg({ footOpen: false }); applyFoot(); };
-    $('footOpen').onclick = () => { S.cfg.footOpen = true; api.setCfg({ footOpen: true }); applyFoot(); };
+    $('footClose').onclick = () => { S.cfg.footOpen = S.cfg.footOpen === false; api.setCfg({ footOpen: S.cfg.footOpen }); applyFoot(); };
     $('panelHandle').onclick = () => { S.cfg.panelOpen = !S.cfg.panelOpen; api.setCfg({ panelOpen: S.cfg.panelOpen }); applyPanel(); };
     $('stFontSize').addEventListener('input', () => { $('stFsVal').textContent = $('stFontSize').value; setDraft({ fontSize: +$('stFontSize').value }); });
     $('stTop').onchange = () => setDraft({ alwaysOnTop: $('stTop').checked });
