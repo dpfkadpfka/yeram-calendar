@@ -421,3 +421,20 @@ body.settings-mode #stClose{display:none}
 .note-add{flex:none;width:90px;height:104px;border-radius:10px;border:1.5px dashed var(--line)!important;background:transparent!important;color:var(--muted);font-size:12.5px;backdrop-filter:none!important}
 .note-add:hover{color:var(--accent);border-color:var(--accent)!important}
 #app.mini .notes,#app.mini .foot-tab{display:none}
+
+/* 설정: 왼쪽 메뉴 + 오른쪽 페이지 */
+.st-wrap{display:flex;gap:14px;align-items:flex-start;min-height:340px}
+.st-nav{flex:none;width:112px;display:flex;flex-direction:column;gap:3px;position:sticky;top:52px}
+.st-nav button{display:flex;align-items:center;gap:7px;text-align:left;padding:7px 10px;border-radius:9px;font-size:13px;font-weight:600;color:var(--muted);background:none!important;border:0!important;box-shadow:none!important;backdrop-filter:none!important}
+.st-nav button span{font-size:14px}
+.st-nav button:hover{background:color-mix(in srgb,var(--fg) 6%,transparent)!important;color:var(--fg)}
+.st-nav button[aria-selected="true"]{background:color-mix(in srgb,var(--accent) 16%,transparent)!important;color:var(--accent)}
+.st-pages{flex:1;min-width:0}
+.st-page{display:flex;flex-direction:column;gap:10px}
+.st-page[hidden]{display:none}
+.st-page h3{margin-top:2px}
+.scene-label{flex-basis:100%;font-size:12px;font-weight:700;color:var(--muted);margin:6px 0 0}
+.scene-label:first-child{margin-top:0}
+@media (max-width:520px){.st-wrap{flex-direction:column}.st-nav{position:static;width:auto;flex-direction:row;flex-wrap:wrap}}
+.notes.only-add{padding:0 4px 2px}
+.notes.only-add .note-add{height:26px;width:auto;padding:0 12px;border-radius:8px}

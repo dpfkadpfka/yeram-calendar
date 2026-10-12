@@ -161,7 +161,7 @@ function wrap(fn) {
 
 ipcMain.handle('cfg:get', wrap(async () => publicCfg()));
 ipcMain.handle('cfg:set', wrap(async (patch) => {
-  const allowed = ['clientId', 'clientSecret', 'hiddenCalendars', 'opacity', 'theme', 'alwaysOnTop', 'locked', 'autoStart', 'weekStart', 'panelOpen', 'panelMode', 'fontFamily', 'fontSize', 'accent', 'bgColor', 'style', 'hoverZoom', 'scene', 'glassSeeThrough', 'dayColors', 'dayBorders', 'notes', 'footOpen', 'bgImage', 'bgImageDark', 'bgImageDim'];
+  const allowed = ['clientId', 'clientSecret', 'hiddenCalendars', 'opacity', 'theme', 'alwaysOnTop', 'locked', 'autoStart', 'weekStart', 'panelOpen', 'panelMode', 'fontFamily', 'fontSize', 'accent', 'bgColor', 'style', 'hoverZoom', 'scene', 'glassSeeThrough', 'dayColors', 'dayBorders', 'notes', 'footOpen', 'skin3d', 'bgImage', 'bgImageDark', 'bgImageDim'];
   for (const k of Object.keys(patch || {})) if (allowed.includes(k)) cfg[k] = patch[k];
   if ('clientId' in patch || 'clientSecret' in patch) { cfg.clientId = String(cfg.clientId || '').trim(); cfg.clientSecret = String(cfg.clientSecret || '').trim(); }
   saveCfg(); applyWindowCfg();
@@ -258,7 +258,7 @@ function applyWindowCfg() {
 function openSettingsWindow() {
   if (settingsWin && !settingsWin.isDestroyed()) { settingsWin.show(); settingsWin.focus(); return; }
   const b = win.getBounds(); const wa = screen.getDisplayMatching(b).workArea;
-  const w = 560, h = Math.min(780, wa.height - 40);
+  const w = 660, h = Math.min(720, wa.height - 40);
   let x = b.x - w - 12; if (x < wa.x) x = Math.min(b.x + b.width + 12, wa.x + wa.width - w); if (x < wa.x) x = wa.x + 20;
   settingsDone = false;
   settingsWin = new BrowserWindow({

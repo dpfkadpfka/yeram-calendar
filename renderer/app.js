@@ -297,7 +297,7 @@
       const tas = box.querySelectorAll('textarea'); const last = tas[tas.length - 1]; if (last) last.focus();
       box.scrollLeft = box.scrollWidth;
     };
-    box.appendChild(add);
+    box.appendChild(add); box.classList.toggle('only-add', !notesOf().length);
   }
   function applyPanel() {
     $('panel').hidden = !S.cfg.panelOpen;
@@ -632,6 +632,19 @@
     neon: D('네온 시티', '#0b0614', ['#ff3cac', '#2bd2ff', '#784ba0', '#ff8a3c'], '8c', DP('#0d0818', '#171124', '#ff5cbc', '#f7eefb', '#b5a7c4', '#2e2340'), 'grain'),
     mocha: D('모카 라떼', '#1a120e', ['#f2a27c', '#a0623e', '#d9a066', '#7a5240'], '4d', DP('#211813', '#2b201a', '#f2a27c', '#f4ebe3', '#c0aa9a', '#44342b'))
   };
+  // ---------- 입체(3D) 스킨: 바탕·카드·그림자·하이라이트 한 벌 ----------
+  const K = (name, dark, bg, bgCss, surface, fg, muted, line, accent, hl, sh, sh2) => ({ name, dark, bgCss, pal: { bg, surface, surface2: surface, fg, muted, line, accent }, hl, sh, sh2 });
+  const SKINS3D = {
+    clay: K('클레이 라벤더', false, '#efe6fb', 'linear-gradient(160deg,#f4ecff,#e6dcf7)', '#fbf7ff', '#2d2540', '#7a6f92', '#e3d8f3', '#9b6cf0', 'rgba(255,255,255,.95)', 'rgba(110,80,170,.16)', 'rgba(110,80,170,.26)'),
+    neu: K('뉴모피즘 그레이', false, '#e4e8ef', 'linear-gradient(160deg,#eceff4,#dde2ea)', '#eef1f6', '#26303f', '#6b7586', '#d6dbe4', '#4f74f0', 'rgba(255,255,255,1)', 'rgba(80,95,125,.2)', 'rgba(80,95,125,.3)'),
+    macaron: K('마카롱', false, '#ffe8ee', 'linear-gradient(160deg,#fff0f3,#ffe0e8 55%,#e8f3ff)', '#fffafb', '#3a2630', '#8d6c7a', '#f3dbe3', '#ff6f91', 'rgba(255,255,255,.95)', 'rgba(190,90,120,.15)', 'rgba(190,90,120,.25)'),
+    retro: K('레트로 키보드', false, '#e8e0cf', 'linear-gradient(160deg,#efe8d8,#ddd3bf)', '#f8f3e7', '#3b342a', '#7c7262', '#ddd2bc', '#e0653a', 'rgba(255,255,255,.85)', 'rgba(90,70,40,.18)', 'rgba(90,70,40,.3)'),
+    mintcandy: K('민트 캔디', false, '#dcf4ec', 'linear-gradient(160deg,#e6fbf4,#d3efe6)', '#f7fffb', '#1f3530', '#62807a', '#cfeae1', '#14a585', 'rgba(255,255,255,.95)', 'rgba(30,120,100,.15)', 'rgba(30,120,100,.25)'),
+    darkclay: K('다크 클레이', true, '#1c1a25', 'linear-gradient(160deg,#23202e,#16141d)', '#2a2737', '#ece8f6', '#a59fba', '#3a3649', '#b39cff', 'rgba(255,255,255,.08)', 'rgba(0,0,0,.4)', 'rgba(0,0,0,.55)'),
+    navygold: K('네이비 골드', true, '#121c33', 'linear-gradient(160deg,#18264a,#0e1628)', '#1d2b4b', '#edf1fa', '#9fb0d0', '#2c3d63', '#f2c14e', 'rgba(255,255,255,.07)', 'rgba(0,0,0,.42)', 'rgba(0,0,0,.58)'),
+    espresso: K('에스프레소', true, '#1d1613', 'linear-gradient(160deg,#261d18,#15100e)', '#2d231e', '#f3e9e1', '#bba495', '#43352d', '#e79a5f', 'rgba(255,255,255,.07)', 'rgba(0,0,0,.42)', 'rgba(0,0,0,.58)')
+  };
+  const skin3dOf = (c) => (c.style === '3d' && SKINS3D[c.skin3d]) || null;
   const DEFAULT_SCENE = 'pastel';
   const SCENE_ALIAS = { lavender: 'lilac', apricot: 'peach', charcoal: 'pastelnight' };
   function photoScene(c) {
@@ -647,6 +660,7 @@
     const c = V(), sc = sceneOf(c);
     let t = c.theme;
     if (glassOn(c) && sc) t = sc.dark ? 'dark' : 'light';
+    const k3 = skin3dOf(c); if (k3) t = k3.dark ? 'dark' : 'light';
     if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
     lookApply();
   }
@@ -663,7 +677,7 @@
     if (c.fontFamily) s.setProperty('--font', '"' + c.fontFamily.replace(/"/g, '') + '","Malgun Gothic","Segoe UI",sans-serif'); else s.removeProperty('--font');
     document.body.style.zoom = String((c.fontSize || 13) / 13);
     root.dataset.style = c.style || 'glass';
-    ['--glass', '--glass2', '--gline', '--accent', '--accent-soft', '--sat', '--surface', '--bg', '--surface2', '--fg', '--muted', '--line'].forEach(k => s.removeProperty(k));
+    ['--hl', '--sh', '--sh2', '--glass', '--glass2', '--gline', '--accent', '--accent-soft', '--sat', '--surface', '--bg', '--surface2', '--fg', '--muted', '--line'].forEach(k => s.removeProperty(k));
     document.body.style.background = '';
     const see = c.acrylic && glassOn(c) && c.scene === 'desktop';
     if (see) root.dataset.acrylic = '1'; else delete root.dataset.acrylic;
@@ -676,6 +690,14 @@
       set('--glass', P.surface + (sc.dark ? '80' : '57')); set('--glass2', P.surface2 + (sc.dark ? 'bf' : '9e'));
       set('--gline', sc.dark ? 'rgba(255,255,255,.12)' : 'rgba(255,255,255,.7)');
       document.body.style.background = sc.bg;
+    }
+    const k3 = skin3dOf(c);
+    if (k3) {
+      const P = k3.pal, set = (k, v) => s.setProperty(k, v);
+      set('--bg', P.bg); set('--surface', P.surface); set('--surface2', P.surface2); set('--fg', P.fg); set('--muted', P.muted); set('--line', P.line);
+      set('--accent', P.accent); set('--sat', P.accent); set('--accent-soft', 'color-mix(in srgb,' + P.accent + ' 18%, ' + P.surface + ')');
+      set('--hl', k3.hl); set('--sh', k3.sh); set('--sh2', k3.sh2);
+      document.body.style.background = k3.bgCss;
     }
     // 2) 직접 고른 포인트 색·카드 색이 있으면 우선
     if (isHex(c.accent)) { s.setProperty('--accent', c.accent); s.setProperty('--sat', c.accent); s.setProperty('--accent-soft', 'color-mix(in srgb,' + c.accent + ' 16%, var(--surface))'); }
@@ -731,31 +753,47 @@
     swatchRow($('stAccent'), ACCENTS, c.accent, '기본', (v) => setDraft({ accent: v }));
     swatchRow($('stBg'), BGS, c.bgColor, '테마 기본', (v) => setDraft({ bgColor: v }));
     const sb = $('stScene'); sb.textContent = '';
-    const cur = c.scene === 'desktop' ? 'desktop' : (c.scene === 'photo' && c.bgImage ? 'photo' : SCENES[c.scene] ? c.scene : (SCENE_ALIAS[c.scene] || DEFAULT_SCENE));
-    const addBtn = (key, label, bgCss, dark, accent) => {
-      const b = el('button', 'scene' + (dark ? ' dk' : ''), label); b.type = 'button'; b.setAttribute('aria-pressed', String(cur === key));
+    const style = c.style || 'glass';
+    const label = (t) => sb.appendChild(el('div', 'scene-label', t));
+    const addBtn = (cur, key, text, bgCss, dark, accent, onPick) => {
+      const b = el('button', 'scene' + (dark ? ' dk' : ''), text); b.type = 'button'; b.setAttribute('aria-pressed', String(cur === key));
       if (bgCss) b.style.background = bgCss;
       if (accent) b.style.setProperty('--dot', accent);
-      b.onclick = () => { setDraft({ scene: key }); renderLook(); }; sb.appendChild(b);
+      b.onclick = () => { onPick(key); renderLook(); }; sb.appendChild(b);
     };
-    if (c.acrylic) addBtn('desktop', '바탕화면 비침', '', false, '');
-    Object.entries(SCENES).filter(([, v]) => !v.dark).forEach(([k, v]) => addBtn(k, v.name, v.bg, false, v.pal.accent));
-    sb.appendChild(el('div', 'scene-break'));
-    Object.entries(SCENES).filter(([, v]) => v.dark).forEach(([k, v]) => addBtn(k, v.name, v.bg, true, v.pal.accent));
-    sb.appendChild(el('div', 'scene-break'));
-    if (c.bgImage) { const ps = photoScene(c); addBtn('photo', '내 사진', ps.bg.replace(' fixed', ''), ps.dark, ''); }
-    const pickB = el('button', 'scene photo-pick', c.bgImage ? '사진 바꾸기' : '+ 사진으로'); pickB.type = 'button';
-    pickB.onclick = () => pickPhoto(); sb.appendChild(pickB);
-    if (cur === 'photo') {
-      const dimRow = el('div', 'photo-dim'); dimRow.appendChild(el('span', null, c.bgImageDark ? '사진 어둡게' : '사진 흐리게'));
-      const rg = el('input'); rg.type = 'range'; rg.min = 0; rg.max = 75; rg.value = c.bgImageDim == null ? 15 : c.bgImageDim;
-      rg.oninput = () => setDraft({ bgImageDim: +rg.value });
-      dimRow.appendChild(rg);
-      const tg = el('button', null, c.bgImageDark ? '밝은 글자 → 어두운 글자' : '어두운 글자 → 밝은 글자'); tg.type = 'button';
-      tg.onclick = () => { setDraft({ bgImageDark: !c.bgImageDark }); renderLook(); };
-      dimRow.appendChild(tg); sb.appendChild(dimRow);
+    $('stSkinNote').hidden = style !== 'flat'; $('stGlassRow').hidden = style === 'flat';
+    $('stSkinTitle').textContent = style === '3d' ? '스킨 (입체)' : '스킨 (유리)';
+    $('stThemeNote').hidden = style === 'flat';
+    if (style === '3d') {
+      const cur = SKINS3D[c.skin3d] ? c.skin3d : '';
+      const pick = (k) => setDraft({ skin3d: k });
+      const btn3 = (k, v) => addBtn(cur, k, v.name, 'linear-gradient(180deg,' + v.pal.surface + ' 0 52%,' + v.pal.bg + ' 52%)', v.dark, v.pal.accent, pick);
+      label('라이트'); addBtn(cur, '', '기본', '', false, '', pick);
+      Object.entries(SKINS3D).filter(([, v]) => !v.dark).forEach(([k, v]) => btn3(k, v));
+      label('다크'); Object.entries(SKINS3D).filter(([, v]) => v.dark).forEach(([k, v]) => btn3(k, v));
+    } else if (style === 'glass') {
+      const cur = c.scene === 'desktop' ? 'desktop' : (c.scene === 'photo' && c.bgImage ? 'photo' : SCENES[c.scene] ? c.scene : (SCENE_ALIAS[c.scene] || DEFAULT_SCENE));
+      const pick = (k) => setDraft({ scene: k });
+      label('라이트');
+      if (c.acrylic) addBtn(cur, 'desktop', '바탕화면 비침', '', false, '', pick);
+      Object.entries(SCENES).filter(([, v]) => !v.dark).forEach(([k, v]) => addBtn(cur, k, v.name, v.bg, false, v.pal.accent, pick));
+      label('다크');
+      Object.entries(SCENES).filter(([, v]) => v.dark).forEach(([k, v]) => addBtn(cur, k, v.name, v.bg, true, v.pal.accent, pick));
+      label('내 사진');
+      if (c.bgImage) { const ps = photoScene(c); addBtn(cur, 'photo', '내 사진', ps.bg.replace(' fixed', ''), ps.dark, '', pick); }
+      const pickB = el('button', 'scene photo-pick', c.bgImage ? '사진 바꾸기' : '+ 사진으로'); pickB.type = 'button';
+      pickB.onclick = () => pickPhoto(); sb.appendChild(pickB);
+      if (cur === 'photo') {
+        const dimRow = el('div', 'photo-dim'); dimRow.appendChild(el('span', null, c.bgImageDark ? '사진 어둡게' : '사진 흐리게'));
+        const rg = el('input'); rg.type = 'range'; rg.min = 0; rg.max = 75; rg.value = c.bgImageDim == null ? 15 : c.bgImageDim;
+        rg.oninput = () => setDraft({ bgImageDim: +rg.value });
+        dimRow.appendChild(rg);
+        const tg = el('button', null, c.bgImageDark ? '밝은 글자 → 어두운 글자' : '어두운 글자 → 밝은 글자'); tg.type = 'button';
+        tg.onclick = () => { setDraft({ bgImageDark: !c.bgImageDark }); renderLook(); };
+        dimRow.appendChild(tg); sb.appendChild(dimRow);
+      }
     }
-    $('stGlassRow').hidden = (c.style || 'glass') !== 'glass';
+
   }
   // 사진 배경: 긴 변 2400px JPEG로 줄여 저장, 평균 밝기로 글자색(밝은/어두운) 자동 선택
   function pickPhoto() {
@@ -791,6 +829,11 @@
     function mark(v) { Array.from(box.querySelectorAll('button')).forEach(x => x.setAttribute('aria-pressed', String((x.dataset.c || '') === (v || '').toLowerCase() || (!v && x.classList.contains('def'))))); }
   }
   function lockApply() { $('lockBtn').classList.toggle('on', !!S.cfg.locked); $('titlebar').classList.toggle('drag', !S.cfg.locked); }
+  function showStPage(pg) {
+    Array.from(document.querySelectorAll('#stNav button')).forEach(b => b.setAttribute('aria-selected', String(b.dataset.page === pg)));
+    Array.from(document.querySelectorAll('.st-page')).forEach(x => { x.hidden = x.dataset.page !== pg; });
+    const f = $('stForm'); if (f && f.parentElement) f.parentElement.scrollTop = 0; window.scrollTo(0, 0);
+  }
   function renderSettings() {
     const c = V();
     $('stClientId').value = c.clientId || '';
@@ -913,6 +956,7 @@
     $('stFont').onchange = () => setDraft({ fontFamily: $('stFont').value });
     $('stStyle').onchange = () => { setDraft({ style: $('stStyle').value }); renderLook(); };
     $('tbOpacity').addEventListener('input', () => { const v = +$('tbOpacity').value; $('stOpacity').value = v; $('stOpVal').textContent = v + '%'; setCfg({ opacity: v / 100 }); });
+    Array.from(document.querySelectorAll('#stNav button')).forEach(b => b.onclick = () => showStPage(b.dataset.page));
     $('footClose').onclick = () => { S.cfg.footOpen = false; api.setCfg({ footOpen: false }); applyFoot(); };
     $('footOpen').onclick = () => { S.cfg.footOpen = true; api.setCfg({ footOpen: true }); applyFoot(); };
     $('panelHandle').onclick = () => { S.cfg.panelOpen = !S.cfg.panelOpen; api.setCfg({ panelOpen: S.cfg.panelOpen }); applyPanel(); };

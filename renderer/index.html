@@ -131,44 +131,70 @@
       <h2>설정 <span class="muted drag-hint">· 제목을 잡고 옮길 수 있어요</span></h2>
       <button type="button" class="ib" id="stClose" aria-label="닫기">✕</button>
     </div>
-    <h3>구글 계정</h3>
-    <details class="adv" id="stAdv">
-      <summary>고급: 내 구글 키 직접 쓰기</summary>
-      <p class="note">비워 두면 앱에 들어 있는 기본 키를 써요. 직접 발급한 키를 쓰고 싶을 때만 넣으세요. 키를 바꾸면 다시 로그인해야 해요.</p>
-      <label class="field"><span>클라이언트 ID</span><input id="stClientId" autocomplete="off" spellcheck="false" placeholder="....apps.googleusercontent.com"></label>
-      <label class="field"><span>클라이언트 보안 비밀번호</span><input id="stSecret" type="password" autocomplete="off" spellcheck="false" placeholder="GOCSPX-..."></label>
-    </details>
-    <div class="row">
-      <span id="stStatus" class="status-text">로그인 안 됨</span>
-      <span class="grow"></span>
-      <button type="button" id="stLogout">로그아웃</button>
-      <button type="button" class="primary" id="stLogin">구글 로그인</button>
+    <div class="st-wrap">
+      <nav class="st-nav" id="stNav">
+        <button type="button" data-page="account" aria-selected="true"><span>👤</span>계정</button>
+        <button type="button" data-page="cals"><span>📅</span>캘린더</button>
+        <button type="button" data-page="design"><span>🎨</span>디자인</button>
+        <button type="button" data-page="skin"><span>🖼️</span>스킨</button>
+        <button type="button" data-page="font"><span>🔤</span>글꼴</button>
+        <button type="button" data-page="window"><span>🪟</span>창·동작</button>
+      </nav>
+      <div class="st-pages">
+        <section class="st-page" data-page="account">
+          <h3>구글 계정</h3>
+          <div class="row">
+            <span id="stStatus" class="status-text">로그인 안 됨</span>
+            <span class="grow"></span>
+            <button type="button" id="stLogout">로그아웃</button>
+            <button type="button" class="primary" id="stLogin">구글 로그인</button>
+          </div>
+          <details class="adv" id="stAdv">
+            <summary>고급: 내 구글 키 직접 쓰기</summary>
+            <p class="note">비워 두면 앱에 들어 있는 기본 키를 써요. 직접 발급한 키를 쓰고 싶을 때만 넣으세요. 키를 바꾸면 다시 로그인해야 해요.</p>
+            <label class="field"><span>클라이언트 ID</span><input id="stClientId" autocomplete="off" spellcheck="false" placeholder="....apps.googleusercontent.com"></label>
+            <label class="field"><span>클라이언트 보안 비밀번호</span><input id="stSecret" type="password" autocomplete="off" spellcheck="false" placeholder="GOCSPX-..."></label>
+          </details>
+        </section>
+        <section class="st-page" data-page="cals" hidden>
+          <h3>표시할 캘린더</h3>
+          <div class="callist" id="stCals"><span class="muted">로그인하면 목록이 나와요.</span></div>
+          <label class="field sm"><span>한 주 시작</span>
+            <select id="stWeek"><option value="0">일요일</option><option value="1">월요일</option></select>
+          </label>
+        </section>
+        <section class="st-page" data-page="design" hidden>
+          <h3>디자인</h3>
+          <div class="row wrap">
+            <label class="field sm"><span>모양</span><select id="stStyle"><option value="glass">유리 (글래스모피즘)</option><option value="3d">입체 (3D)</option><option value="flat">평면</option></select></label>
+            <label class="field sm" id="stThemeRow"><span>밝기</span>
+              <select id="stTheme"><option value="system">윈도우 설정 따름</option><option value="light">밝게</option><option value="dark">어둡게</option></select>
+            </label>
+          </div>
+          <p class="note" id="stThemeNote">유리·입체 모양에서는 고른 스킨이 밝기를 정해요.</p>
+          <div class="field"><span>포인트 색 (오늘 표시·버튼)</span><div class="swatches" id="stAccent"></div></div>
+          <div class="field"><span>카드 색 (유리 모양에서는 유리 색)</span><div class="swatches" id="stBg"></div></div>
+        </section>
+        <section class="st-page" data-page="skin" hidden>
+          <h3 id="stSkinTitle">스킨</h3>
+          <div class="field" id="stGlassRow"><div class="scenes" id="stScene"></div></div>
+          <p class="note" id="stSkinNote" hidden>평면 모양에는 스킨이 없어요. 디자인에서 유리나 입체를 고르세요.</p>
+        </section>
+        <section class="st-page" data-page="font" hidden>
+          <h3>글꼴</h3>
+          <label class="field"><span>글꼴</span><select id="stFont"></select></label>
+          <label class="field"><span>글자·화면 크기 <b id="stFsVal">13</b></span><input type="range" id="stFontSize" min="11" max="17" step="1"></label>
+        </section>
+        <section class="st-page" data-page="window" hidden>
+          <h3>창·동작</h3>
+          <label class="field"><span>투명도 <b id="stOpVal">100%</b></span><input type="range" id="stOpacity" min="30" max="100" step="5"></label>
+          <label class="check"><input type="checkbox" id="stPeek"> 마우스를 올리면 그 칸 크게 보기</label>
+          <label class="check"><input type="checkbox" id="stTop"> 항상 다른 창 위에 표시</label>
+          <label class="check"><input type="checkbox" id="stLock"> 위치·크기 고정</label>
+          <label class="check"><input type="checkbox" id="stAuto"> 윈도우 시작할 때 자동 실행</label>
+        </section>
+      </div>
     </div>
-    <h3>표시할 캘린더</h3>
-    <div class="callist" id="stCals"><span class="muted">로그인하면 목록이 나와요.</span></div>
-    <h3>창</h3>
-    <label class="field"><span>투명도 <b id="stOpVal">100%</b></span><input type="range" id="stOpacity" min="30" max="100" step="5"></label>
-    <div class="row wrap">
-      <label class="field sm"><span>테마</span>
-        <select id="stTheme"><option value="system">윈도우 설정 따름</option><option value="light">밝게</option><option value="dark">어둡게</option></select>
-      </label>
-      <label class="field sm"><span>한 주 시작</span>
-        <select id="stWeek"><option value="0">일요일</option><option value="1">월요일</option></select>
-      </label>
-    </div>
-    <h3>글꼴·색</h3>
-    <div class="row wrap">
-      <label class="field sm"><span>디자인</span><select id="stStyle"><option value="glass">유리 (글래스모피즘)</option><option value="3d">입체 (3D)</option><option value="flat">평면</option></select></label>
-      <label class="field"><span>글꼴</span><select id="stFont"></select></label>
-      <label class="field sm"><span>글자·화면 크기 <b id="stFsVal">13</b></span><input type="range" id="stFontSize" min="11" max="17" step="1"></label>
-    </div>
-    <div class="field"><span>포인트 색 (오늘 표시·버튼)</span><div class="swatches" id="stAccent"></div></div>
-    <div class="field" id="stGlassRow"><span>유리 뒤 배경</span><div class="scenes" id="stScene"></div></div>
-    <div class="field"><span>카드 색 (유리 디자인에서는 유리 색)</span><div class="swatches" id="stBg"></div></div>
-    <label class="check"><input type="checkbox" id="stPeek"> 마우스를 올리면 그 칸 크게 보기</label>
-    <label class="check"><input type="checkbox" id="stTop"> 항상 다른 창 위에 표시</label>
-    <label class="check"><input type="checkbox" id="stLock"> 위치·크기 고정</label>
-    <label class="check"><input type="checkbox" id="stAuto"> 윈도우 시작할 때 자동 실행</label>
     <div class="dlg-foot">
       <button type="button" class="danger" id="stQuit">앱 종료</button>
       <span class="muted" id="stVer"></span>
