@@ -39,7 +39,15 @@ jobs:
             git tag "$V" && git push origin "$V"
           fi
           gh release view "$V" >/dev/null 2>&1 || gh release create "$V" --title "$V" --notes "Ram Calendar $V"
-      - name: 설치 파일 만들고 릴리스에 올리기
+      - name: 설치 파일 만들기
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx electron-builder --win --x64 --publish always
+        run: npx electron-builder --win --x64 --publish never
+      - name: 릴리스에 올리기 (이미 있는 파일은 덮어쓰기)
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          V="v$(node -p "require('./package.json').version")"
+          ls -la dist
+          gh release upload "$V" dist/*.exe dist/*.exe.blockmap dist/latest.yml --clobber
