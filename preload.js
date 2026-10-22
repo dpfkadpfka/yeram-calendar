@@ -15,8 +15,10 @@ contextBridge.exposeInMainWorld('api', {
   remove: call('ev:delete'),
   win: call('win:action'),
   syncPull: call('sync:pull'),
+  alarmAct: call('alarm:act'),
+  muteGoogleDefaults: call('gcal:muteDefaults'),
   on: (ch, fn) => {
-    if (!['app:focus', 'app:refresh', 'app:cfg', 'app:update', 'app:settings'].includes(ch)) return;
+    if (!['app:focus', 'app:refresh', 'app:cfg', 'app:update', 'app:settings', 'app:goto'].includes(ch)) return;
     ipcRenderer.on(ch, (_e, arg) => fn(arg));
   }
 });

@@ -294,7 +294,7 @@
     try {
       const r = await api.syncPull();
       if (r.ok && r.data.changed) {
-        const typing = document.activeElement && document.activeElement.closest && document.activeElement.closest('.note');
+        const typing = document.activeElement && document.activeElement.closest && document.activeElement.closest('.pnote');
         ['notes', 'dayColors', 'dayBorders', 'dayEmojis'].forEach(k => { if (!(k === 'notes' && typing)) S.cfg[k] = r.data.cfg[k]; });
         render(); applyFoot();
       }
@@ -313,7 +313,7 @@
   function renderNotes() {
     const box = $('notes'); box.textContent = '';
     notesOf().forEach((n, i) => {
-      const card = el('div', 'note'); card.style.setProperty('--nc', n.color || NOTE_COLORS[0]);
+      const card = el('div', 'pnote'); card.style.setProperty('--nc', n.color || NOTE_COLORS[0]);
       card.style.setProperty('--rot', ((i * 37) % 5 - 2) * 0.6 + 'deg');
       const ta = el('textarea'); ta.value = n.text || ''; ta.placeholder = '메모'; ta.spellcheck = false;
       ta.addEventListener('input', () => { const list = notesOf().slice(); list[i] = Object.assign({}, list[i], { text: ta.value }); saveNotes(list); });
@@ -474,7 +474,7 @@
     }
     const r = await api.patch(ev.calId, ev.id, body);
     if (!r.ok) banner('옮기지 못했어요: ' + r.message); else banner('');
-    load();
+    load(); api.win('alarmRefresh');
   }
 
   // ---------- 편집창 ----------
@@ -523,10 +523,12 @@
     box.addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) setColor(b.dataset.c); });
   }
   function setColor(c) { ED.color = c || ''; Array.from($('edColors').children).forEach(b => b.setAttribute('aria-pressed', String(b.dataset.c === ED.color))); }
-  function syncAllDay() { document.querySelector('.row.when').classList.toggle('allday', $('edAllDay').checked); }
+  function syncAllDay() { document.querySelector('.row.when').classList.toggle('allday', $('edAllDay').checked); $('edAlarmWrap').hidden = $('edAllDay').checked; }
 
   function openEditor(ev, date) {
     ED.ev = ev || null; ED.delArmed = false;
+    const am = S.cfg.alarmMinutes == null ? 10 : +S.cfg.alarmMinutes;
+    $('edAlarm').options[0].textContent = S.cfg.alarm === false ? '기본값 (꺼짐)' : '기본값 (' + (am ? (am >= 60 ? am / 60 + '시간' : am + '분') + ' 전' : '시작할 때') + ')';
     $('edErr').hidden = true;
     $('edTitle').textContent = ev ? '일정 수정' : '일정 추가';
     const cs = $('edCal'); cs.textContent = '';
@@ -550,16 +552,18 @@
       if (rm.useDefault) $('edRemind').value = 'default';
       else if (rm.overrides && rm.overrides.length) { const m = String(rm.overrides[0].minutes); $('edRemind').value = ['10', '30', '60', '1440'].includes(m) ? m : 'default'; }
       else $('edRemind').value = 'none';
+      const xp = (e.extendedProperties && e.extendedProperties.private) || {};
+      $('edAlarm').value = xp.ramAlarm != null && [...$('edAlarm').options].some(o => o.value === String(xp.ramAlarm)) ? String(xp.ramAlarm) : '';
       $('edRepeat').value = '';
       $('edRepeatWrap').hidden = ev.recurring; $('edRecurNote').hidden = !ev.recurring;
-      ['edSummary', 'edAllDay', 'edSD', 'edST', 'edED', 'edET', 'edLoc', 'edDesc', 'edRemind', 'edSave', 'edDelete'].forEach(id => $(id).disabled = !ev.writable);
+      ['edSummary', 'edAllDay', 'edSD', 'edST', 'edED', 'edET', 'edLoc', 'edDesc', 'edRemind', 'edAlarm', 'edSave', 'edDelete'].forEach(id => $(id).disabled = !ev.writable);
     } else {
       const primary = S.cals.find(c => c.primary && c.writable) || S.cals.find(c => c.writable);
       if (primary) cs.value = primary.id;
       const d = date || S.sel || todayStr();
       $('edSummary').value = ''; $('edAllDay').checked = true;
       $('edSD').value = d; $('edED').value = d; $('edST').value = '09:00'; $('edET').value = '10:00';
-      $('edLoc').value = ''; $('edDesc').value = ''; setColor(''); $('edRemind').value = 'none'; $('edRepeat').value = '';
+      $('edLoc').value = ''; $('edDesc').value = ''; setColor(''); $('edRemind').value = 'none'; $('edAlarm').value = ''; $('edRepeat').value = '';
       $('edRepeatWrap').hidden = false; $('edRecurNote').hidden = true;
       ['edSummary', 'edAllDay', 'edSD', 'edST', 'edED', 'edET', 'edLoc', 'edDesc', 'edRemind', 'edSave'].forEach(id => $(id).disabled = false);
     }
@@ -588,6 +592,10 @@
     if (rm === 'default') body.reminders = { useDefault: true };
     else if (rm === 'none') body.reminders = { useDefault: false, overrides: [] };
     else body.reminders = { useDefault: false, overrides: [{ method: 'popup', minutes: +rm }] };
+    // 컴퓨터 알림: 이 앱만 읽는 값이라 휴대폰은 울리지 않아요
+    const al = allDay ? '' : $('edAlarm').value;
+    if (al) body.extendedProperties = { private: { ramAlarm: al } };
+    else if (ED.ev) body.extendedProperties = { private: { ramAlarm: null } };
     const rep = $('edRepeat').value;
     $('edSave').disabled = true;
     let r;
@@ -605,7 +613,7 @@
     if (!r.ok) return err('저장하지 못했어요: ' + r.message);
     $('editor').close();
     S.sel = sd; if (sd.slice(0, 7) !== S.ym) S.ym = sd.slice(0, 7);
-    load();
+    load(); api.win('alarmRefresh');
   }
 
   async function deleteEditor() {
@@ -613,7 +621,7 @@
     if (!ED.delArmed) { ED.delArmed = true; $('edDelete').textContent = '한 번 더 누르면 삭제'; return; }
     const r = await api.remove(ED.ev.calId, ED.ev.id);
     if (!r.ok) { $('edErr').textContent = '삭제하지 못했어요: ' + r.message; $('edErr').hidden = false; return; }
-    $('editor').close(); load();
+    $('editor').close(); load(); api.win('alarmRefresh');
   }
 
   // ---------- 검색 ----------
@@ -903,6 +911,9 @@
     $('stOpacity').value = Math.round((c.opacity || 1) * 100); $('stOpVal').textContent = $('stOpacity').value + '%';
     $('stTheme').value = c.theme || 'system'; $('stWeek').value = String(c.weekStart || 0);
     $('stPeek').checked = c.hoverZoom !== false;
+    $('stAlarm').checked = c.alarm !== false; $('stAlarmMin').value = String(c.alarmMinutes == null ? 10 : c.alarmMinutes); $('stAlarmSound').checked = c.alarmSound !== false;
+    $('stAlarmMin').disabled = $('stAlarmSound').disabled = !$('stAlarm').checked;
+    [...$('edAlarm').options][0].textContent = '기본값 (' + $('stAlarmMin').selectedOptions[0].textContent + ')';
     $('stTop').checked = !!c.alwaysOnTop; $('stLock').checked = !!c.locked; $('stAuto').checked = !!c.autoStart;
     renderLook();
     const box = $('stCals'); box.textContent = '';
@@ -1024,6 +1035,16 @@
     $('stFontSize').addEventListener('input', () => { $('stFsVal').textContent = $('stFontSize').value; setDraft({ fontSize: +$('stFontSize').value }); });
     $('stTop').onchange = () => setDraft({ alwaysOnTop: $('stTop').checked });
     $('stPeek').onchange = () => setDraft({ hoverZoom: $('stPeek').checked });
+    $('stAlarm').onchange = () => { setDraft({ alarm: $('stAlarm').checked }); $('stAlarmMin').disabled = $('stAlarmSound').disabled = !$('stAlarm').checked; };
+    $('stAlarmMin').onchange = () => setDraft({ alarmMinutes: +$('stAlarmMin').value });
+    $('stAlarmSound').onchange = () => setDraft({ alarmSound: $('stAlarmSound').checked });
+    $('stAlarmTest').onclick = () => api.win('alarmTest');
+    $('stMuteGoogle').onclick = async () => {
+      $('stMuteGoogle').disabled = true; $('stMuteMsg').textContent = '끄는 중…';
+      const r = await api.muteGoogleDefaults();
+      $('stMuteMsg').textContent = r.ok ? (r.data ? '캘린더 ' + r.data + '개의 기본 알림을 껐어요.' : '이미 꺼져 있어요.') : '실패: ' + r.message;
+      $('stMuteGoogle').disabled = false;
+    };
     $('stLock').onchange = () => setDraft({ locked: $('stLock').checked });
     $('stAuto').onchange = () => setDraft({ autoStart: $('stAuto').checked });
     $('stQuit').onclick = () => api.win('quit');
@@ -1037,6 +1058,7 @@
     new ResizeObserver(() => fitChips()).observe($('grid'));
     api.on('app:focus', () => { if (Date.now() - S.lastFocusLoad > 15000) { S.lastFocusLoad = Date.now(); load(); } });
     api.on('app:refresh', () => load({ cals: true }));
+    api.on('app:goto', (d) => { if (typeof d !== 'string') return; if (d.slice(0, 7) !== S.ym) { S.ym = d.slice(0, 7); S.sel = d; S.events = []; render(); load(); } else select(d); });
     api.on('app:update', (msg) => banner(msg));
     api.on('app:settings', (m) => {
       if (!m) return;

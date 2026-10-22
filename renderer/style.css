@@ -408,14 +408,14 @@ body.settings-mode #stClose{display:none}
 .foot-tab b{color:var(--accent);font-weight:700}
 .notes{display:flex;gap:10px;overflow-x:auto;overflow-y:hidden;padding:4px 4px 6px;align-items:stretch;scrollbar-width:thin}
 .notes:empty{display:none}
-.note{position:relative;flex:none;width:168px;height:104px;background:var(--nc);border-radius:3px 3px 12px 3px;transform:rotate(var(--rot));
+.pnote{position:relative;flex:none;width:168px;height:104px;background:var(--nc);border-radius:3px 3px 12px 3px;transform:rotate(var(--rot));
   box-shadow:0 1px 1px rgba(0,0,0,.08),0 6px 14px rgba(0,0,0,.14);transition:transform .15s}
-.note::before{content:"";position:absolute;left:50%;top:-5px;width:44px;height:12px;transform:translateX(-50%) rotate(-2deg);background:rgba(255,255,255,.55);box-shadow:0 1px 2px rgba(0,0,0,.08)}
-.note:hover,.note:focus-within{transform:rotate(0) translateY(-2px);z-index:2}
-.note textarea{width:100%;height:100%;resize:none;border:0!important;outline:0;background:transparent!important;padding:10px 10px 22px;font:inherit;font-size:12.5px;line-height:1.45;color:#2b2a26}
-.note textarea::placeholder{color:rgba(43,42,38,.4)}
+.pnote::before{content:"";position:absolute;left:50%;top:-5px;width:44px;height:12px;transform:translateX(-50%) rotate(-2deg);background:rgba(255,255,255,.55);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.pnote:hover,.pnote:focus-within{transform:rotate(0) translateY(-2px);z-index:2}
+.pnote textarea{width:100%;height:100%;resize:none;border:0!important;outline:0;background:transparent!important;padding:10px 10px 22px;font:inherit;font-size:12.5px;line-height:1.45;color:#2b2a26}
+.pnote textarea::placeholder{color:rgba(43,42,38,.4)}
 .note-tools{position:absolute;left:6px;right:6px;bottom:4px;display:flex;align-items:center;gap:4px;opacity:0;transition:opacity .15s}
-.note:hover .note-tools,.note:focus-within .note-tools{opacity:1}
+.pnote:hover .note-tools,.pnote:focus-within .note-tools{opacity:1}
 .note-tools .nc{width:12px;height:12px;padding:0;border-radius:50%;background:var(--sw)!important;border:1px solid rgba(0,0,0,.18)!important;backdrop-filter:none!important}
 .note-tools .nd{margin-left:auto;width:18px;height:18px;padding:0;line-height:16px;border-radius:50%;background:rgba(0,0,0,.08)!important;border:0!important;color:#2b2a26;font-size:13px;backdrop-filter:none!important}
 .note-add{flex:none;width:90px;height:104px;border-radius:10px;border:1.5px dashed var(--line)!important;background:transparent!important;color:var(--muted);font-size:12.5px;backdrop-filter:none!important}
@@ -504,7 +504,7 @@ body.settings-mode #stClose{display:none}
 .memo-box.closed .notes{display:none}
 .memo-box .notes{display:grid;grid-template-columns:1fr 1fr;gap:8px;overflow-y:auto;overflow-x:hidden;padding:4px 2px 4px}
 .memo-box .notes.only-add{grid-template-columns:1fr}
-.memo-box .note{width:auto;height:92px}
+.memo-box .pnote{width:auto;height:92px}
 .memo-box .note-add{width:auto;height:92px}
 .memo-box .notes.only-add .note-add{height:30px}
 .memo-box .note-tools .nc{width:11px;height:11px}

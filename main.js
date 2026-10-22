@@ -1,5 +1,5 @@
 // Ram Calendar(구 예람달력) — 구글 캘린더 연동 바탕화면 달력 (Electron main process)
-const { app, BrowserWindow, ipcMain, shell, Tray, Menu, nativeImage, safeStorage, screen, session } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, Tray, Menu, nativeImage, safeStorage, screen, session, nativeTheme } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
@@ -189,6 +189,87 @@ async function pullSync() {
 }
 function schedulePush() { clearTimeout(pushTimer); pushTimer = setTimeout(() => pushSync().catch(() => {}), 1500); }
 
+// ---------- 데스크탑 알림 (오른쪽 아래 팝업) ----------
+// 구글 캘린더의 알림과 따로, 이 컴퓨터에서만 울린다. 핸드폰은 조용.
+// 일정마다 extendedProperties.private.ramAlarm 에 분 단위(또는 'off')를 저장해 두면 그 값을, 없으면 설정의 기본값을 쓴다.
+let alarmEvents = [], alarmWins = [], alarmSnoozed = [], alarmTimer = null, alarmFetchTimer = null;
+const alarmOn = () => cfg.alarm !== false;
+const alarmDefault = () => (cfg.alarmMinutes == null ? 10 : Number(cfg.alarmMinutes));
+function alarmFired() { if (!Array.isArray(cfg.alarmFired)) cfg.alarmFired = []; return cfg.alarmFired; }
+function eventAlarmMinutes(e) {
+  const p = e.extendedProperties && e.extendedProperties.private;
+  if (p && p.ramAlarm != null && p.ramAlarm !== '') return p.ramAlarm === 'off' ? null : Number(p.ramAlarm);
+  return alarmDefault();
+}
+function declined(e) { return (e.attendees || []).some(a => a.self && a.responseStatus === 'declined'); }
+async function fetchAlarmEvents() {
+  if (!cfg.refreshToken || !alarmOn()) { alarmEvents = []; return; }
+  const cl = await api('GET', '/users/me/calendarList', { maxResults: 250 });
+  const hidden = new Set(cfg.hiddenCalendars || []);
+  const cals = (cl.items || []).filter(c => !hidden.has(c.id) && !/#holiday@/.test(c.id));
+  const now = Date.now(), tmin = new Date(now - 3 * 3600e3).toISOString(), tmax = new Date(now + 26 * 3600e3).toISOString();
+  const out = [];
+  await Promise.all(cals.map(async (c) => {
+    try {
+      const j = await api('GET', `/calendars/${enc1(c.id)}/events`, { timeMin: tmin, timeMax: tmax, singleEvents: 'true', orderBy: 'startTime', maxResults: 250 });
+      (j.items || []).forEach(e => {
+        if (e.status === 'cancelled' || !e.start || !e.start.dateTime || declined(e)) return;
+        out.push({ id: e.id, title: e.summary || '', location: e.location || '', start: Date.parse(e.start.dateTime), end: e.end && e.end.dateTime ? Date.parse(e.end.dateTime) : 0,
+          minutes: eventAlarmMinutes(e), calName: c.summaryOverride || c.summary || '', color: c.backgroundColor || '' });
+      });
+    } catch (e) { if (e.code === 'NOT_LOGGED_IN') throw e; }
+  }));
+  alarmEvents = out; checkAlarms();
+}
+function checkAlarms() {
+  if (!alarmOn()) return;
+  const now = Date.now(), fired = alarmFired();
+  for (const e of alarmEvents) {
+    if (e.minutes == null) continue;
+    const at = e.start - e.minutes * 60000, key = e.id + '|' + e.start + '|' + e.minutes;
+    if (fired.includes(key)) continue;
+    // 정해진 때가 됐고, 일정이 아직 안 지났으면(시작 후 10분까지) 띄운다 — 컴퓨터를 늦게 켜도 놓친 알림이 뜬다
+    if (now >= at && now < e.start + 10 * 60000) { fired.push(key); showAlarm(e, key); }
+  }
+  alarmSnoozed = alarmSnoozed.filter(s => { if (now >= s.at) { showAlarm(s.e, s.key); return false; } return true; });
+  if (fired.length > 300) cfg.alarmFired = fired.slice(-200);
+  saveCfg();
+}
+function layoutAlarms() {
+  const wa = screen.getPrimaryDisplay().workArea, W = 372, H = 150, gap = 4;
+  alarmWins.forEach((w, i) => { if (!w.isDestroyed()) w.setBounds({ x: wa.x + wa.width - W - 8, y: wa.y + wa.height - (H + gap) * (i + 1) - 4, width: W, height: H }); });
+}
+function showAlarm(e, key) {
+  if (alarmWins.length >= 4) { const old = alarmWins.shift(); if (old && !old.isDestroyed()) old.close(); }
+  const d = { key, title: e.title, location: e.location, start: e.start, end: e.end, calName: e.calName, color: e.color, dark: nativeTheme.shouldUseDarkColors, sound: cfg.alarmSound !== false };
+  const w = new BrowserWindow({ width: 372, height: 150, frame: false, transparent: true, resizable: false, movable: false, minimizable: false, maximizable: false,
+    alwaysOnTop: true, skipTaskbar: true, focusable: false, show: false, hasShadow: false, title: 'Ram Calendar 알림',
+    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, autoplayPolicy: 'no-user-gesture-required' } });
+  w._alarm = { e, key };
+  try { w.setAlwaysOnTop(true, 'screen-saver'); } catch {}
+  w.loadFile(path.join(__dirname, 'renderer', 'alarm.html'), { query: { d: JSON.stringify(d) } });
+  w.once('ready-to-show', () => { layoutAlarms(); w.showInactive(); });
+  w.on('closed', () => { alarmWins = alarmWins.filter(x => x !== w); layoutAlarms(); });
+  alarmWins.unshift(w); layoutAlarms();
+}
+ipcMain.handle('alarm:act', wrap(async (key, act, minutes) => {
+  const w = alarmWins.find(x => x._alarm && x._alarm.key === key);
+  const info = w && w._alarm;
+  if (act === 'snooze' && info) alarmSnoozed.push({ e: info.e, key: info.key, at: Date.now() + (Number(minutes) || 5) * 60000 });
+  if (act === 'open' && win && info) { win.show(); win.focus(); const t = new Date(info.e.start); win.webContents.send('app:goto', t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0')); }
+  if (w && !w.isDestroyed()) w.close();
+}));
+function startAlarms() {
+  clearInterval(alarmTimer); clearInterval(alarmFetchTimer);
+  alarmTimer = setInterval(checkAlarms, 20 * 1000);
+  alarmFetchTimer = setInterval(() => fetchAlarmEvents().catch(() => {}), 5 * 60 * 1000);
+  setTimeout(() => fetchAlarmEvents().catch(() => {}), 3000);
+}
+function testAlarm() {
+  const now = Date.now();
+  showAlarm({ id: 'test', title: '🖥[회의] 알림 미리 보기', location: '3층 회의실', start: now + alarmDefault() * 60000, end: now + (alarmDefault() + 60) * 60000, calName: '', color: '#4f6bed' }, 'test|' + now);
+}
+
 // ---------- IPC ----------
 function wrap(fn) {
   return async (_e, ...args) => {
@@ -199,15 +280,25 @@ function wrap(fn) {
 
 ipcMain.handle('cfg:get', wrap(async () => publicCfg()));
 ipcMain.handle('cfg:set', wrap(async (patch) => {
-  const allowed = ['clientId', 'clientSecret', 'hiddenCalendars', 'opacity', 'theme', 'alwaysOnTop', 'locked', 'autoStart', 'weekStart', 'panelOpen', 'panelMode', 'fontFamily', 'fontSize', 'accent', 'bgColor', 'style', 'hoverZoom', 'scene', 'glassSeeThrough', 'dayColors', 'dayBorders', 'dayEmojis', 'notes', 'footOpen', 'skin3d', 'skinFlat', 'bgImage', 'bgImageDark', 'bgImageDim'];
+  const allowed = ['clientId', 'clientSecret', 'hiddenCalendars', 'opacity', 'theme', 'alwaysOnTop', 'locked', 'autoStart', 'weekStart', 'panelOpen', 'panelMode', 'fontFamily', 'fontSize', 'accent', 'bgColor', 'style', 'hoverZoom', 'scene', 'glassSeeThrough', 'dayColors', 'dayBorders', 'dayEmojis', 'notes', 'footOpen', 'skin3d', 'skinFlat', 'alarm', 'alarmMinutes', 'alarmSound', 'bgImage', 'bgImageDark', 'bgImageDim'];
   for (const k of Object.keys(patch || {})) if (allowed.includes(k)) cfg[k] = patch[k];
   if ('clientId' in patch || 'clientSecret' in patch) { cfg.clientId = String(cfg.clientId || '').trim(); cfg.clientSecret = String(cfg.clientSecret || '').trim(); }
   if (SYNC_KEYS.some(k => k in (patch || {}))) { cfg.syncAt = Date.now(); schedulePush(); }
+  if (['alarm', 'alarmMinutes', 'hiddenCalendars'].some(k => k in (patch || {}))) fetchAlarmEvents().catch(() => {});
   saveCfg(); applyWindowCfg();
   return publicCfg();
 }));
+ipcMain.handle('gcal:muteDefaults', wrap(async () => {
+  // 내 캘린더(소유)의 '기본 알림'을 비워서, 앞으로 만드는 일정이 핸드폰에서 울리지 않게 한다
+  const cl = await api('GET', '/users/me/calendarList', { maxResults: 250, minAccessRole: 'owner' });
+  let n = 0;
+  for (const c of (cl.items || [])) {
+    if (c.defaultReminders && c.defaultReminders.length) { await api('PATCH', `/users/me/calendarList/${enc1(c.id)}`, null, { defaultReminders: [] }); n++; }
+  }
+  return n;
+}));
 ipcMain.handle('sync:pull', wrap(async () => ({ changed: await pullSync(), cfg: publicCfg() })));
-ipcMain.handle('auth:login', wrap(async () => { await login(); if (win) { win.webContents.send('app:cfg'); win.webContents.send('app:refresh'); } return publicCfg(); }));
+ipcMain.handle('auth:login', wrap(async () => { await login(); fetchAlarmEvents().catch(() => {}); if (win) { win.webContents.send('app:cfg'); win.webContents.send('app:refresh'); } return publicCfg(); }));
 ipcMain.handle('auth:logout', wrap(async () => {
   const rt = dec(cfg.refreshToken);
   if (rt) fetch('https://oauth2.googleapis.com/revoke?token=' + enc1(rt), { method: 'POST' }).catch(() => {});
@@ -276,6 +367,8 @@ ipcMain.handle('win:action', wrap(async (act, arg) => {
   if (act === 'open' && typeof arg === 'string' && /^https:\/\//.test(arg)) shell.openExternal(arg);
   if (act === 'quit') { quitting = true; app.quit(); }
   if (act === 'openSettings') openSettingsWindow();
+  if (act === 'alarmRefresh') fetchAlarmEvents().catch(() => {});
+  if (act === 'alarmTest') testAlarm();
   if (act === 'draft') win.webContents.send('app:settings', { type: 'draft', patch: arg });
   if (act === 'settingsDone') { settingsDone = true; win.webContents.send('app:settings', { type: arg === 'save' ? 'save' : 'cancel' }); if (settingsWin) settingsWin.close(); }
 }));
@@ -381,6 +474,7 @@ if (!app.requestSingleInstanceLock()) {
     session.defaultSession.setPermissionCheckHandler((_wc, perm) => perm === 'local-fonts');
     session.defaultSession.setPermissionRequestHandler((_wc, perm, cb) => cb(perm === 'local-fonts'));
     createWindow();
+    startAlarms();
     try {
       tray = new Tray(nativeImage.createFromPath(iconPath()).resize({ width: 16, height: 16 }));
       tray.setToolTip(APP_NAME);
