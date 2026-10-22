@@ -527,7 +527,7 @@
 
   function openEditor(ev, date) {
     ED.ev = ev || null; ED.delArmed = false;
-    const am = S.cfg.alarmMinutes == null ? 10 : +S.cfg.alarmMinutes;
+    const am = S.cfg.alarmMinutes == null ? 30 : +S.cfg.alarmMinutes;
     $('edAlarm').options[0].textContent = S.cfg.alarm === false ? '기본값 (꺼짐)' : '기본값 (' + (am ? (am >= 60 ? am / 60 + '시간' : am + '분') + ' 전' : '시작할 때') + ')';
     $('edErr').hidden = true;
     $('edTitle').textContent = ev ? '일정 수정' : '일정 추가';
@@ -911,7 +911,7 @@
     $('stOpacity').value = Math.round((c.opacity || 1) * 100); $('stOpVal').textContent = $('stOpacity').value + '%';
     $('stTheme').value = c.theme || 'system'; $('stWeek').value = String(c.weekStart || 0);
     $('stPeek').checked = c.hoverZoom !== false;
-    $('stAlarm').checked = c.alarm !== false; $('stAlarmMin').value = String(c.alarmMinutes == null ? 10 : c.alarmMinutes); $('stAlarmSound').checked = c.alarmSound !== false;
+    $('stAlarm').checked = c.alarm !== false; $('stAlarmMin').value = String(c.alarmMinutes == null ? 30 : c.alarmMinutes); $('stAlarmSound').checked = c.alarmSound !== false;
     $('stAlarmMin').disabled = $('stAlarmSound').disabled = !$('stAlarm').checked;
     [...$('edAlarm').options][0].textContent = '기본값 (' + $('stAlarmMin').selectedOptions[0].textContent + ')';
     $('stTop').checked = !!c.alwaysOnTop; $('stLock').checked = !!c.locked; $('stAuto').checked = !!c.autoStart;

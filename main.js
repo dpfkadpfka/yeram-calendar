@@ -194,7 +194,7 @@ function schedulePush() { clearTimeout(pushTimer); pushTimer = setTimeout(() => 
 // 일정마다 extendedProperties.private.ramAlarm 에 분 단위(또는 'off')를 저장해 두면 그 값을, 없으면 설정의 기본값을 쓴다.
 let alarmEvents = [], alarmWins = [], alarmSnoozed = [], alarmTimer = null, alarmFetchTimer = null;
 const alarmOn = () => cfg.alarm !== false;
-const alarmDefault = () => (cfg.alarmMinutes == null ? 10 : Number(cfg.alarmMinutes));
+const alarmDefault = () => (cfg.alarmMinutes == null ? 30 : Number(cfg.alarmMinutes));
 function alarmFired() { if (!Array.isArray(cfg.alarmFired)) cfg.alarmFired = []; return cfg.alarmFired; }
 function eventAlarmMinutes(e) {
   const p = e.extendedProperties && e.extendedProperties.private;
