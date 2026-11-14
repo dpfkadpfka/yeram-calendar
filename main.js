@@ -513,7 +513,9 @@ function u32() {
   U32 = {
     find: lib.func('intptr_t __stdcall FindWindowExW(intptr_t parent, intptr_t after, str16 cls, str16 title)'),
     getWin: lib.func('intptr_t __stdcall GetWindow(intptr_t hWnd, uint32_t cmd)'),
-    setPos: lib.func('bool __stdcall SetWindowPos(intptr_t hWnd, intptr_t after, int x, int y, int cx, int cy, uint32_t flags)')
+    setPos: lib.func('bool __stdcall SetWindowPos(intptr_t hWnd, intptr_t after, int x, int y, int cx, int cy, uint32_t flags)'),
+    showWin: lib.func('bool __stdcall ShowWindow(intptr_t hWnd, int cmd)'),
+    iconic: lib.func('bool __stdcall IsIconic(intptr_t hWnd)')
   };
   return U32;
 }
@@ -564,6 +566,24 @@ function sendToBack() {
     u32().setPos(myHwnd(), slot, 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0010); // NOSIZE|NOMOVE|NOACTIVATE
   } catch (e) { console.error('sendToBack', e); }
 }
+// 지킴이: 캡처 도구·바탕화면 보기 등으로 달력이 바탕화면 밑으로 내려가거나 최소화되면 1초 안에 제자리로 되돌린다
+function belowDesk() {
+  const u = u32(); const desk = deskWindow(); if (!desk) return false;
+  let w = myHwnd();
+  for (let i = 0; i < 3000; i++) { w = BigInt(u.getWin(w, 2) || 0); if (!w) return true; if (w === desk) return false; } // GW_HWNDNEXT
+  return false;
+}
+function deskGuard() {
+  if (process.platform !== 'win32') return;
+  setInterval(() => {
+    if (!win || win.isDestroyed() || !win.isVisible() || peekFront) return;
+    try {
+      const u = u32(), me = myHwnd();
+      if (u.iconic(me)) u.showWin(me, 4); // SW_SHOWNOACTIVATE: 포커스는 뺏지 않고 다시 보이게
+      if (belowDesk()) { const slot = backSlot(); if (slot !== null) u.setPos(me, slot, 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0010 | 0x0040); }
+    } catch (e) { console.error('deskGuard', e); }
+  }, 1000);
+}
 // ---------- 바탕화면 그림 스킨: 윈도우 바탕화면 그림을 창 위치에 맞춰 깔아 창이 투명한 것처럼 보이게 ----------
 let wallCache = { mtime: -1, url: '', w: 0, h: 0 };
 function wallpaper() {
@@ -608,7 +628,7 @@ function createWindow() {
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true }
   });
   win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
-  hookStayBack();
+  hookStayBack(); deskGuard();
   win.once('ready-to-show', () => { applyWindowCfg(); win.show(); });
   const saveBounds = () => { if (win && !win.isMinimized()) { if (cfg.mini) cfg.miniBounds = win.getBounds(); else cfg.bounds = win.getBounds(); saveCfg(); } };
   win.on('moved', saveBounds); win.on('resized', saveBounds);
