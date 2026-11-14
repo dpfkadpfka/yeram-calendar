@@ -566,23 +566,33 @@ function sendToBack() {
     u32().setPos(myHwnd(), slot, 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0010); // NOSIZE|NOMOVE|NOACTIVATE
   } catch (e) { console.error('sendToBack', e); }
 }
-// 지킴이: 캡처 도구·바탕화면 보기 등으로 달력이 바탕화면 밑으로 내려가거나 최소화되면 1초 안에 제자리로 되돌린다
+// 지킴이: 캡처 도구·바탕화면 보기 등으로 달력이 바탕화면 밑으로 내려가거나 최소화되면 제자리로 되돌린다.
+// 시간마다 확인하지 않고, 윈도우가 "앞 창이 바뀜·최소화" 신호를 보낼 때만 한 번 확인한다(SetWinEventHook).
 function belowDesk() {
   const u = u32(); const desk = deskWindow(); if (!desk) return false;
   let w = myHwnd();
   for (let i = 0; i < 3000; i++) { w = BigInt(u.getWin(w, 2) || 0); if (!w) return true; if (w === desk) return false; } // GW_HWNDNEXT
   return false;
 }
+function deskFix() {
+  if (!win || win.isDestroyed() || !win.isVisible() || peekFront) return;
+  try {
+    const u = u32(), me = myHwnd();
+    if (u.iconic(me)) u.showWin(me, 4); // SW_SHOWNOACTIVATE: 포커스는 뺏지 않고 다시 보이게
+    if (belowDesk()) { const slot = backSlot(); if (slot !== null) u.setPos(me, slot, 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0010 | 0x0040); }
+  } catch (e) { console.error('deskFix', e); }
+}
+let deskHooks = null;
 function deskGuard() {
-  if (process.platform !== 'win32') return;
-  setInterval(() => {
-    if (!win || win.isDestroyed() || !win.isVisible() || peekFront) return;
-    try {
-      const u = u32(), me = myHwnd();
-      if (u.iconic(me)) u.showWin(me, 4); // SW_SHOWNOACTIVATE: 포커스는 뺏지 않고 다시 보이게
-      if (belowDesk()) { const slot = backSlot(); if (slot !== null) u.setPos(me, slot, 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0010 | 0x0040); }
-    } catch (e) { console.error('deskGuard', e); }
-  }, 1000);
+  if (process.platform !== 'win32' || deskHooks) return;
+  try {
+    const koffi = require('koffi'); const lib = koffi.load('user32.dll');
+    const Proc = koffi.proto('void __stdcall RamWinEventProc(intptr_t hook, uint32_t ev, intptr_t hwnd, long obj, long child, uint32_t thread, uint32_t time)');
+    const setHook = lib.func('intptr_t __stdcall SetWinEventHook(uint32_t evMin, uint32_t evMax, intptr_t mod, RamWinEventProc *cb, uint32_t pid, uint32_t tid, uint32_t flags)');
+    let t = null;
+    const cb = koffi.register(() => { clearTimeout(t); t = setTimeout(deskFix, 150); }, koffi.pointer(Proc));
+    deskHooks = { cb, hooks: [setHook(0x0003, 0x0003, 0, cb, 0, 0, 0), setHook(0x0016, 0x0017, 0, cb, 0, 0, 0)] }; // FOREGROUND, MINIMIZESTART~END
+  } catch (e) { console.error('deskGuard', e); }
 }
 // ---------- 바탕화면 그림 스킨: 윈도우 바탕화면 그림을 창 위치에 맞춰 깔아 창이 투명한 것처럼 보이게 ----------
 let wallCache = { mtime: -1, url: '', w: 0, h: 0 };
