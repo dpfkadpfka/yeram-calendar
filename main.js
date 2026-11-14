@@ -614,7 +614,9 @@ function createWindow() {
   win.on('moved', saveBounds); win.on('resized', saveBounds);
   win.on('close', (e) => { if (!quitting) { e.preventDefault(); win.hide(); } });
   win.on('focus', () => { win.webContents.send('app:focus'); if (stayBack() && !peekFront) setImmediate(sendToBack); });
-  win.on('blur', () => { if (peekFront) { peekFront = false; if (stayBack()) setImmediate(sendToBack); } });
+  // 앞으로 꺼낸 뒤 포커스를 잃어도(캡처 도구·Esc 등) 억지로 뒤로 보내지 않는다.
+  // 다른 창을 누르면 그 창이 저절로 위로 오고, 달력을 다시 누를 때 바탕화면 자리로 돌아간다.
+  win.on('blur', () => { if (peekFront) peekFront = false; });
   win.on('hide', () => { peekFront = false; });
   win.on('show', () => { if (stayBack() && !peekFront) setImmediate(sendToBack); });
   let boundsTimer = null;
